@@ -1,0 +1,64 @@
+# ===============================
+# Build directories
+# ===============================
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/CMakeScripts/
+/Makefile
+/cmake_install.cmake
+/*.cbp   # Code::Blocks
+/*.user
+/*.suo
+/*.vcxproj*
+/*.xcodeproj
+/*.xcworkspace
+
+# ===============================
+# Compiled objects
+# ===============================
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.lib
+*.exe
+*.out
+*.app
+
+# ===============================
+# Generated files
+# ===============================
+compile_commands.json
+*.log
+*.tmp
+*.swp
+*.swo
+
+# ===============================
+# IDE/Editor files
+# ===============================
+.vscode/
+.idea/
+*.iml
+*.DS_Store
+
+# ===============================
+# External dependencies (optional)
+# ===============================
+# If you fetch GLAD, GLFW, GLM, RtAudio, KissFFT via FetchContent, 
+# you might want to ignore them
+/external/glad/build/
+/external/glfw/build/
+/external/rtaudio/build/
+/external/kissfft/build/
+
+# ===============================
+# Shader caches / binaries (optional)
+# ===============================
+*.spv
+*.glsl
+
+p.md
+.cache/
