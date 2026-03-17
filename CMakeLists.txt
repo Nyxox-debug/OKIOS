@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16)cmakel
 project(OKIOS LANGUAGES C CXX)
 
 include(FetchContent)
@@ -29,14 +29,19 @@ if(UNIX AND NOT APPLE)
 endif()
 
 
-add_executable(app
+add_executable(engine
     src/main.cpp
 )
 
-target_link_libraries(app
+target_link_libraries(engine
     PRIVATE
         glad
         glfw
         OpenGL::GL   # system OpenGL
         glm::glm
+)
+
+target_include_directories(engine
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
