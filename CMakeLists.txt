@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)cmakel
+cmake_minimum_required(VERSION 3.16)
 project(OKIOS LANGUAGES C CXX)
 
 include(FetchContent)
@@ -13,17 +13,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 
-
-FetchContent_Declare(
-    glm
-    GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG master
-)
-FetchContent_MakeAvailable(glm)
+# Vendors
+add_subdirectory(vendor/glm)
 
 
-add_library(glad STATIC external/glad/src/glad.c)
-target_include_directories(glad PUBLIC external/glad/include)
+add_library(glad STATIC vendor/glad/src/glad.c)
+target_include_directories(glad PUBLIC vendor/glad/include)
 if(UNIX AND NOT APPLE)
     target_link_libraries(glad PRIVATE dl)
 endif()
@@ -44,4 +39,5 @@ target_link_libraries(engine
 target_include_directories(engine
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor
 )
