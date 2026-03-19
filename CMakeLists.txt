@@ -30,6 +30,7 @@ add_executable(engine
     src/creature/mesh.cpp
     src/shader/shader.cpp
     src/creature/creature.cpp
+    src/camera.cpp
 )
 
 target_link_libraries(engine
