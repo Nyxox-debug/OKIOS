@@ -26,6 +26,10 @@ endif()
 
 add_executable(engine
     src/main.cpp
+    src/engine.cpp
+    src/creature/mesh.cpp
+    src/shader/shader.cpp
+    src/creature/creature.cpp
 )
 
 target_link_libraries(engine

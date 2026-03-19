@@ -6,12 +6,12 @@
 
 struct Vertex {
   glm::vec3 Position;
+  glm::vec3 Color;
 };
 
 class Mesh {
 private:
   unsigned int VAO, VBO, EBO;
-  unsigned int indexCount; // NOTE: Needed for glDrawElements
   void setupMesh();
 
 public:

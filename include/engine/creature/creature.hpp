@@ -1,15 +1,14 @@
-// #include "../shader/shader.hpp"
-// #include "mesh.h"
+#include "mesh.hpp"
 // #include "transform.h"
-// #include <memory>
-//
-// class Model {
-// public:
-//   Model(std::vector<std::unique_ptr<Mesh>> meshes);
-//   void Draw(Shader &shader) const;
-//
-//   Transform transform;
-//
-// private:
-//   std::vector<std::unique_ptr<Mesh>> meshes;
-// };
+#include <memory>
+
+class Creature {
+public:
+  Creature(std::vector<std::unique_ptr<Mesh>> meshes);
+  void Draw(Shader &shader) const;
+
+  // Transform transform;
+
+private:
+  std::vector<std::unique_ptr<Mesh>> meshess;
+};
