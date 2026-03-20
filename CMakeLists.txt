@@ -31,6 +31,7 @@ add_executable(engine
     src/shader/shader.cpp
     src/creature/creature.cpp
     src/camera.cpp
+    src/terrain/terrain.cpp
 )
 
 target_link_libraries(engine

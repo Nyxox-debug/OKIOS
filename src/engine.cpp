@@ -1,6 +1,7 @@
 #include "engine/engine.hpp"
-#include "engine/camera.h"
+#include "engine/camera.hpp"
 #include "engine/creature/creature.hpp"
+#include "engine/terrain.hpp"
 #include <iostream>
 
 // clang-format off
@@ -65,8 +66,20 @@ bool Engine::init() {
   shader = std::make_unique<Shader>("../res/shaders/def.vert",
                                     "../res/shaders/def.frag");
 
-  camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f),
-                                    glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+  // camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f),
+  //                                   glm::vec3(0.0f, 1.0f, 0.0f), -90.0f,
+  //                                   0.0f);
+
+  camera = std::make_unique<Camera>(
+      glm::vec3(
+          4.5f, 20.0f,
+          18.0f), // centered on X (0–9 midpoint), high up, pulled back on Z
+      glm::vec3(0.0f, 1.0f, 0.0f),
+      -90.0f, // yaw: facing straight along -Z
+      -55.0f  // pitch: steeper downward angle to see the ground plane clearly
+  );
+
+  camera->MovementSpeed = 15.0f;
 
   glfwSetWindowUserPointer(window, this);
 
@@ -108,6 +121,8 @@ bool Engine::init() {
 void Engine::run() {
   if (!running)
     return;
+
+  terrain = std::make_unique<Terrain>(50, 1.0f);
 
   std::vector<Vertex> vertices = {{{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
                                   {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -155,6 +170,15 @@ void Engine::run() {
     shader->use();
     shader->setMat4("view", view);
     shader->setMat4("projection", projection);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glm::mat4 terrainModel = glm::mat4(1.0f);
+    terrainModel =
+        glm::translate(terrainModel, glm::vec3(-25.0f, -0.5f, -25.0f));
+    shader->setMat4("model", terrainModel);
+    terrain->Draw(*shader);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     for (auto &c : creatures) {
       glm::mat4 model = glm::mat4(1.0f);
