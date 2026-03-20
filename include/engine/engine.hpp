@@ -1,6 +1,7 @@
 #pragma once
 #include "camera.h"
 #include <memory>
+#include <vector>
 struct GLFWwindow;
 class Shader;
 class Creature;
@@ -11,7 +12,8 @@ private:
   bool running = false;
   void processInput();
   std::unique_ptr<Shader> shader;
-  std::unique_ptr<Creature> creature;
+  std::vector<std::unique_ptr<Creature>> creatures;
+  // std::unique_ptr<Creature> creature;
 
   std::unique_ptr<Camera> camera;
   float deltaTime = 0.0f;
@@ -22,5 +24,6 @@ public:
   ~Engine();
   bool init();
   void run();
+  void update(float dt);
   void shutdown();
 };
