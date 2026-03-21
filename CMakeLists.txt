@@ -32,6 +32,7 @@ add_executable(engine
     src/creature/creature.cpp
     src/camera.cpp
     src/terrain/terrain.cpp
+    src/transform.cpp
 )
 
 target_link_libraries(engine

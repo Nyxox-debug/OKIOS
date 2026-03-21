@@ -145,8 +145,9 @@ void Engine::run() {
 
     auto c = std::make_unique<Creature>(std::move(meshArray));
 
-    c->position = {(float)i, 0.0f, 0.0f};
+    c->transform.position = {(float)i, 0.0f, 0.0f};
     c->velocity = {0.0f, 0.0f, 0.0f};
+    c->transform.scale = {1.0f, 1.0f, 1.0f};
 
     creatures.push_back(std::move(c));
   }
@@ -181,11 +182,8 @@ void Engine::run() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     for (auto &c : creatures) {
-      glm::mat4 model = glm::mat4(1.0f);
-      model = glm::translate(
-          model, glm::vec3(c->position.x, c->position.y, c->position.z));
 
-      shader->setMat4("model", model);
+      shader->setMat4("model", c->transform.getModelMatrix());
       c->Draw(*shader);
     }
 
@@ -209,8 +207,14 @@ void Engine::update(float dt) {
     c->velocity.x *= 0.95f;
     c->velocity.z *= 0.95f;
 
-    c->position.x += c->velocity.x * dt;
-    c->position.z += c->velocity.z * dt;
+    c->transform.position.x += c->velocity.x * dt;
+    c->transform.position.z += c->velocity.z * dt;
+
+    if (c->velocity.x != 0.0f || c->velocity.z != 0.0f) {
+      float targetYaw = atan2(c->velocity.x, c->velocity.z);
+      c->transform.rotation.y = glm::mix(c->transform.rotation.y, targetYaw,
+                                         0.1f); // 0.1f = smoothing factor
+    }
   }
 }
 
