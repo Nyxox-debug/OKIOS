@@ -3,7 +3,6 @@
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices) {
   this->vertices = vertices;
   this->indices = indices;
-
   setupMesh();
 }
 
@@ -22,20 +21,24 @@ void Mesh::setupMesh() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
                &indices[0], GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+  // Position (location = 0)
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                        (void *)(3 * sizeof(float)));
+  // Color (location = 1)
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
   glEnableVertexAttribArray(1);
+
+  // Normal (location = 2)
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+  glEnableVertexAttribArray(2);
 
   glBindVertexArray(0);
 }
 
 void Mesh::Draw(Shader &shader) const {
-  shader.use();
-
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()),
                  GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
 }

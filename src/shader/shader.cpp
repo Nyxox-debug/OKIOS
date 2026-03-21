@@ -35,15 +35,27 @@ Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
 }
 
 int Shader::getUniformLocation(const std::string &name) const {
-    return glGetUniformLocation(program, name.c_str());
+  return glGetUniformLocation(program, name.c_str());
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &mat) const {
-    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+  glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 }
 
 void Shader::setFloat(const std::string &name, float value) const {
-    glUniform1f(getUniformLocation(name), value);
+  glUniform1f(getUniformLocation(name), value);
+}
+
+void Shader::setVec3(const std::string &name, const glm::vec3 &vec) const {
+  glUniform3fv(getUniformLocation(name), 1, &vec[0]);
+}
+
+void Shader::setVec3(const std::string &name, float x, float y, float z) const {
+  glUniform3f(getUniformLocation(name), x, y, z);
+}
+
+void Shader::setMat3(const std::string &name, const glm::mat3 &mat) const {
+  glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 }
 
 Shader::~Shader() { glDeleteProgram(program); }

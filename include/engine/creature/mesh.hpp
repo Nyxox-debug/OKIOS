@@ -7,6 +7,7 @@
 struct Vertex {
   glm::vec3 Position;
   glm::vec3 Color;
+  glm::vec3 normal;
 };
 
 class Mesh {
@@ -17,6 +18,6 @@ private:
 public:
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
-  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indicies);
+  Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices);
   void Draw(Shader &shader) const;
 };

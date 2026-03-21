@@ -13,6 +13,7 @@
 
 #include <ctime>
 #include <glm/common.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -63,21 +64,12 @@ bool Engine::init() {
     return false;
   }
 
-  shader = std::make_unique<Shader>("../res/shaders/def.vert",
-                                    "../res/shaders/def.frag");
+  shader = std::make_unique<Shader>("../res/shaders/phong.vert",
+                                    "../res/shaders/phong.frag");
 
-  // camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 3.0f),
-  //                                   glm::vec3(0.0f, 1.0f, 0.0f), -90.0f,
-  //                                   0.0f);
-
-  camera = std::make_unique<Camera>(
-      glm::vec3(
-          4.5f, 20.0f,
-          18.0f), // centered on X (0–9 midpoint), high up, pulled back on Z
-      glm::vec3(0.0f, 1.0f, 0.0f),
-      -90.0f, // yaw: facing straight along -Z
-      -55.0f  // pitch: steeper downward angle to see the ground plane clearly
-  );
+  camera =
+      std::make_unique<Camera>(glm::vec3(4.5f, 20.0f, 18.0f),
+                               glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -55.0f);
 
   camera->MovementSpeed = 15.0f;
 
@@ -111,7 +103,6 @@ bool Engine::init() {
 
   glEnable(GL_DEPTH_TEST);
 
-  // Seed randomness once
   srand(time(NULL));
 
   running = true;
@@ -124,18 +115,44 @@ void Engine::run() {
 
   terrain = std::make_unique<Terrain>(50, 1.0f);
 
-  std::vector<Vertex> vertices = {{{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},
-                                  {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                  {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                                  {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}},
-                                  {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-                                  {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 1.0f}},
-                                  {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-                                  {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 0.0f}}};
+  std::vector<Vertex> vertices = {
+      // Front (+Z)
+      {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0, 0, 1}},
+      {{0.5f, -0.5f, 0.5f}, {0, 1, 0}, {0, 0, 1}},
+      {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0, 0, 1}},
+      {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 0, 1}},
+      // Back (-Z)
+      {{-0.5f, 0.5f, -0.5f}, {1, 0, 1}, {0, 0, -1}},
+      {{-0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0, 0, -1}},
+      {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, 0, -1}},
+      {{0.5f, 0.5f, -0.5f}, {0, 0, 0}, {0, 0, -1}},
+      // Right (+X)
+      {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
+      {{0.5f, -0.5f, -0.5f}, {0, 1, 0}, {1, 0, 0}},
+      {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1, 0, 0}},
+      {{0.5f, 0.5f, 0.5f}, {1, 1, 0}, {1, 0, 0}},
+      // Left (-X)
+      {{-0.5f, 0.5f, 0.5f}, {1, 0, 1}, {-1, 0, 0}},
+      {{-0.5f, -0.5f, 0.5f}, {0, 1, 1}, {-1, 0, 0}},
+      {{-0.5f, -0.5f, -0.5f}, {1, 1, 1}, {-1, 0, 0}},
+      {{-0.5f, 0.5f, -0.5f}, {0, 0, 0}, {-1, 0, 0}},
+      // Top (+Y)
+      {{-0.5f, 0.5f, -0.5f}, {1, 0, 0}, {0, 1, 0}},
+      {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
+      {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0, 1, 0}},
+      {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 1, 0}},
+      // Bottom (-Y)
+      {{-0.5f, -0.5f, 0.5f}, {1, 0, 1}, {0, -1, 0}},
+      {{0.5f, -0.5f, 0.5f}, {0, 1, 1}, {0, -1, 0}},
+      {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, -1, 0}},
+      {{-0.5f, -0.5f, -0.5f}, {0, 0, 0}, {0, -1, 0}},
+  };
 
-  std::vector<unsigned int> indices = {0, 1, 3, 1, 2, 3, 0, 4, 1, 1, 4, 5,
-                                       4, 7, 5, 5, 7, 6, 3, 2, 7, 2, 6, 7,
-                                       3, 7, 0, 0, 7, 4, 1, 5, 2, 2, 5, 6};
+  std::vector<unsigned int> indices;
+  for (unsigned int f = 0; f < 6; f++) {
+    unsigned int b = f * 4;
+    indices.insert(indices.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
+  }
 
   creatures.clear();
 
@@ -144,11 +161,9 @@ void Engine::run() {
     meshArray.push_back(std::make_unique<Mesh>(vertices, indices));
 
     auto c = std::make_unique<Creature>(std::move(meshArray));
-
     c->transform.position = {(float)i, 0.0f, 0.0f};
     c->velocity = {0.0f, 0.0f, 0.0f};
     c->transform.scale = {1.0f, 1.0f, 1.0f};
-
     creatures.push_back(std::move(c));
   }
 
@@ -171,19 +186,27 @@ void Engine::run() {
     shader->use();
     shader->setMat4("view", view);
     shader->setMat4("projection", projection);
+    // shader->setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
+    shader->setVec3("lightDir",
+                    glm::vec3(0.0f, -1.0f, 0.2f));
+    shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader->setVec3("viewPos", camera->Position);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glm::mat4 terrainModel = glm::mat4(1.0f);
     terrainModel =
         glm::translate(terrainModel, glm::vec3(-25.0f, -0.5f, -25.0f));
     shader->setMat4("model", terrainModel);
+    shader->setMat3("normalMatrix",
+                    glm::mat3(glm::transpose(glm::inverse(terrainModel))));
     terrain->Draw(*shader);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
     for (auto &c : creatures) {
-
-      shader->setMat4("model", c->transform.getModelMatrix());
+      glm::mat4 model = c->transform.getModelMatrix();
+      shader->setMat4("model", model);
+      shader->setMat3("normalMatrix",
+                      glm::mat3(glm::transpose(glm::inverse(model))));
       c->Draw(*shader);
     }
 
@@ -194,16 +217,13 @@ void Engine::run() {
 
 void Engine::update(float dt) {
   for (auto &c : creatures) {
-    // rand movement
     c->velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
     c->velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
 
     float maxSpeed = 2.0f;
-
     c->velocity.x = glm::clamp(c->velocity.x, -maxSpeed, maxSpeed);
     c->velocity.z = glm::clamp(c->velocity.z, -maxSpeed, maxSpeed);
 
-    // friction (prevents infinite sliding)
     c->velocity.x *= 0.95f;
     c->velocity.z *= 0.95f;
 
@@ -212,8 +232,8 @@ void Engine::update(float dt) {
 
     if (c->velocity.x != 0.0f || c->velocity.z != 0.0f) {
       float targetYaw = atan2(c->velocity.x, c->velocity.z);
-      c->transform.rotation.y = glm::mix(c->transform.rotation.y, targetYaw,
-                                         0.1f); // 0.1f = smoothing factor
+      c->transform.rotation.y =
+          glm::mix(c->transform.rotation.y, targetYaw, 0.1f);
     }
   }
 }
