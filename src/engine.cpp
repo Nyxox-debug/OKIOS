@@ -1,6 +1,7 @@
 #include "engine/engine.hpp"
 #include "engine/camera.hpp"
 #include "engine/creature/creature.hpp"
+#include "engine/input.hpp"
 #include "engine/terrain.hpp"
 #include <iostream>
 
@@ -19,17 +20,22 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 void Engine::processInput() {
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+  if (Input::IsKeyPressed(window, GLFW_KEY_W)) {
     camera->ProcessKeyboard(FORWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+  };
+  if (Input::IsKeyPressed(window, GLFW_KEY_S)) {
     camera->ProcessKeyboard(BACKWARD, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+  };
+  if (Input::IsKeyPressed(window, GLFW_KEY_A)) {
     camera->ProcessKeyboard(LEFT, deltaTime);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+  };
+  if (Input::IsKeyPressed(window, GLFW_KEY_D)) {
     camera->ProcessKeyboard(RIGHT, deltaTime);
+  };
 
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+  if (Input::IsKeyPressed(window, GLFW_KEY_ESCAPE)) {
     glfwSetWindowShouldClose(window, true);
+  };
 }
 
 Engine::Engine() = default;
@@ -67,11 +73,20 @@ bool Engine::init() {
   shader = std::make_unique<Shader>("../res/shaders/phong.vert",
                                     "../res/shaders/phong.frag");
 
-  camera =
-      std::make_unique<Camera>(glm::vec3(4.5f, 20.0f, 18.0f),
-                               glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -55.0f);
+  // camera =
+  //     std::make_unique<Camera>(glm::vec3(4.5f, 20.0f, 18.0f),
+  //                              glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -55.0f);
 
-  camera->MovementSpeed = 15.0f;
+  // camera->MovementSpeed = 15.0f;
+
+  camera =
+      std::make_unique<Camera>(glm::vec3(25.0f, 30.0f, 25.0f), // high and back
+                               glm::vec3(0.0f, 1.0f, 0.0f),    // up vector
+                               -135.0f, // yaw: pointing diagonally
+                               -45.0f   // pitch: looking down at 45°
+      );
+
+  camera->MovementSpeed = 20.0f; // faster movement for overview
 
   glfwSetWindowUserPointer(window, this);
 
@@ -187,8 +202,7 @@ void Engine::run() {
     shader->setMat4("view", view);
     shader->setMat4("projection", projection);
     // shader->setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
-    shader->setVec3("lightDir",
-                    glm::vec3(0.0f, -1.0f, 0.2f));
+    shader->setVec3("lightDir", glm::vec3(0.0f, -1.0f, 0.2f));
     shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
     shader->setVec3("viewPos", camera->Position);
 
