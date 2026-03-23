@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.hpp"
+#include "world.hpp"
 #include "terrain.hpp"
 #include <memory>
 #include <vector>
@@ -13,8 +14,8 @@ private:
   bool running = false;
   void processInput();
   std::unique_ptr<Shader> shader;
-  std::vector<std::unique_ptr<Creature>> creatures;
   std::unique_ptr<Terrain> terrain;
+  World world;
   // std::unique_ptr<Creature> creature;
 
   std::unique_ptr<Camera> camera;

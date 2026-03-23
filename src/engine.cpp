@@ -1,8 +1,8 @@
 #include "engine/engine.hpp"
 #include "engine/camera.hpp"
-#include "engine/creature/creature.hpp"
 #include "engine/input.hpp"
 #include "engine/terrain.hpp"
+#include "glm/fwd.hpp"
 #include <iostream>
 
 // clang-format off
@@ -169,17 +169,19 @@ void Engine::run() {
     indices.insert(indices.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
   }
 
-  creatures.clear();
-
   for (int i = 0; i < 10; i++) {
-    std::vector<std::unique_ptr<Mesh>> meshArray;
-    meshArray.push_back(std::make_unique<Mesh>(vertices, indices));
+    int entity = world.createEntity();
+    TransformComponent t;
+    VelocityComponent v;
+    MeshComponent m;
+    m.mesh = std::make_shared<Mesh>(vertices, indices);
+    t.transform.position = {(float)i, 0.0f, 0.0f};
+    t.transform.scale = {1.0f, 1.0f, 1.0f};
+    v.velocity = {0.0f, 0.0f, 0.0f};
 
-    auto c = std::make_unique<Creature>(std::move(meshArray));
-    c->transform.position = {(float)i, 0.0f, 0.0f};
-    c->velocity = {0.0f, 0.0f, 0.0f};
-    c->transform.scale = {1.0f, 1.0f, 1.0f};
-    creatures.push_back(std::move(c));
+    world.addMeshComponent(entity, m);
+    world.addTransformComponent(entity, t);
+    world.addVelocityComponent(entity, v);
   }
 
   while (!glfwWindowShouldClose(window)) {
@@ -216,12 +218,14 @@ void Engine::run() {
     terrain->Draw(*shader);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    for (auto &c : creatures) {
-      glm::mat4 model = c->transform.getModelMatrix();
+    for (auto &[id, trans] : world.transforms) {
+      glm::mat4 model = trans.transform.getModelMatrix();
       shader->setMat4("model", model);
       shader->setMat3("normalMatrix",
                       glm::mat3(glm::transpose(glm::inverse(model))));
-      c->Draw(*shader);
+      if (world.meshes.count(id)) {
+        world.meshes.at(id).mesh->Draw(*shader);
+      }
     }
 
     glfwSwapBuffers(window);
@@ -229,28 +233,34 @@ void Engine::run() {
   }
 }
 
-void Engine::update(float dt) {
-  for (auto &c : creatures) {
-    c->velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
-    c->velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
+void MovementSystem(World &world, float dt) {
+  for (auto &[id, vel] : world.velocities) {
+    if (world.transforms.count(id)) {
+      auto &trans = world.transforms.at(id);
+      vel.velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
 
-    float maxSpeed = 2.0f;
-    c->velocity.x = glm::clamp(c->velocity.x, -maxSpeed, maxSpeed);
-    c->velocity.z = glm::clamp(c->velocity.z, -maxSpeed, maxSpeed);
+      vel.velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
 
-    c->velocity.x *= 0.95f;
-    c->velocity.z *= 0.95f;
+      float maxSpeed = 2.0f;
+      vel.velocity.x = glm::clamp(vel.velocity.x, -maxSpeed, maxSpeed);
+      vel.velocity.z = glm::clamp(vel.velocity.z, -maxSpeed, maxSpeed);
 
-    c->transform.position.x += c->velocity.x * dt;
-    c->transform.position.z += c->velocity.z * dt;
+      vel.velocity.x *= 0.95f;
+      vel.velocity.z *= 0.95f;
 
-    if (c->velocity.x != 0.0f || c->velocity.z != 0.0f) {
-      float targetYaw = atan2(c->velocity.x, c->velocity.z);
-      c->transform.rotation.y =
-          glm::mix(c->transform.rotation.y, targetYaw, 0.1f);
+      trans.transform.position.x += vel.velocity.x * dt;
+      trans.transform.position.z += vel.velocity.z * dt;
+
+      if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
+        float targetYaw = atan2(vel.velocity.x, vel.velocity.z);
+        trans.transform.rotation.y =
+            glm::mix(trans.transform.rotation.y, targetYaw, 0.1f);
+      }
     }
   }
 }
+
+void Engine::update(float dt) { MovementSystem(world, dt); }
 
 void Engine::shutdown() {
   if (window) {
