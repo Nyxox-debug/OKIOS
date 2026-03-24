@@ -1,4 +1,5 @@
 #include "engine/terrain.hpp"
+#include <cmath>
 #include <glm/glm.hpp>
 
 Terrain::Terrain(int gridSize, float cellSize, glm::vec2 offset) {
@@ -9,6 +10,7 @@ Terrain::Terrain(int gridSize, float cellSize, glm::vec2 offset) {
   this->cellSize = cellSize;
   this->gridSize = gridSize;
   generate(gridSize, cellSize);
+  bounds = this->getBounds();
 }
 
 void Terrain::generate(int gridSize, float cellSize) {
@@ -18,7 +20,10 @@ void Terrain::generate(int gridSize, float cellSize) {
   for (int z = 0; z <= gridSize; z++) {
     for (int x = 0; x <= gridSize; x++) {
       Vertex v;
-      v.Position = {x * cellSize, 0.0f, z * cellSize};
+      // float sine = 1.2f * sin(x * cellSize) + sin(z * cellSize);
+      float sine = sin(x * cellSize * 0.3f);
+      heights.push_back(sine);
+      v.Position = {x * cellSize, sine, z * cellSize};
       v.Color = {0.2f, 0.5f, 0.2f};
       verts.push_back(v);
     }
@@ -43,8 +48,9 @@ float Terrain::terrainHeight(float x, float z) {
   glm::vec2 localSpace = glm::vec2(x - offset.x, z - offset.y);
   int cellX = (int)(localSpace.x / cellSize);
   int cellZ = (int)(localSpace.y / cellSize);
-  // TODO: return the right height when mountains and hills are added
-  return 0.0;
+
+  float l = cellZ * (gridSize + 1) + cellX;
+  return heights[l];
 };
 
 glm::vec4 Terrain::getBounds() {

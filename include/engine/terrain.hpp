@@ -1,6 +1,7 @@
 #pragma once
 #include "mesh.hpp"
 #include <memory>
+#include <vector>
 
 class Terrain {
 public:
@@ -13,6 +14,8 @@ public:
   glm::mat4 modelMat;
   glm::mat3 normalMat;
   glm::vec4 getBounds();
+  glm::vec4 bounds;
+  std::vector<float> heights;
 
 private:
   std::unique_ptr<Mesh> mesh;
