@@ -1,5 +1,6 @@
 #include "glm/fwd.hpp"
 #include "mesh.hpp"
+#include "terrain.hpp"
 #include "transform.hpp"
 #include <memory>
 #include <optional>
@@ -29,6 +30,7 @@ public:
   std::unordered_map<int, TransformComponent> transforms;
   std::unordered_map<int, MeshComponent> meshes;
   std::unordered_map<int, LightComponent> lightSources;
+  std::unique_ptr<Terrain> terrain;
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
   void addTransformComponent(int entityID, TransformComponent trans);
@@ -38,4 +40,7 @@ public:
   int createEntity();
   std::optional<VelocityComponent> getVelocityComponent(int entityID);
   std::optional<TransformComponent> getTransformComponent(int entityID);
+  void init();
+
+
 };

@@ -1,6 +1,10 @@
 #include "engine/world.hpp"
 #include <optional>
 
+void World::init() {
+  terrain = std::make_unique<Terrain>(50, 1.0f, glm::vec2{-25.0f, -25.0f});
+}
+
 int World::createEntity() {
   return nextID++;
 }

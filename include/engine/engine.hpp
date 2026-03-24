@@ -1,7 +1,6 @@
 #pragma once
 #include "camera.hpp"
 #include "world.hpp"
-#include "terrain.hpp"
 #include <memory>
 #include <vector>
 struct GLFWwindow;
@@ -14,7 +13,6 @@ private:
   bool running = false;
   void processInput();
   std::unique_ptr<Shader> shader;
-  std::unique_ptr<Terrain> terrain;
   World world;
   // std::unique_ptr<Creature> creature;
 

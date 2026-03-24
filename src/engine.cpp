@@ -1,7 +1,6 @@
 #include "engine/engine.hpp"
 #include "engine/camera.hpp"
 #include "engine/input.hpp"
-#include "engine/terrain.hpp"
 #include "glm/fwd.hpp"
 #include <iostream>
 
@@ -119,6 +118,7 @@ bool Engine::init() {
   glEnable(GL_DEPTH_TEST);
 
   srand(time(NULL));
+  world.init();
 
   running = true;
   return true;
@@ -134,8 +134,6 @@ void LightSystem(World &world, Shader &shader) {
 void Engine::run() {
   if (!running)
     return;
-
-  terrain = std::make_unique<Terrain>(50, 1.0f);
 
   std::vector<Vertex> vertices = {
       // Front (+Z)
@@ -225,9 +223,9 @@ void Engine::run() {
     shader->setVec3("viewPos", camera->Position);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    shader->setMat4("model", terrain->modelMat);
-    shader->setMat3("normalMatrix", terrain->normalMat);
-    terrain->Draw(*shader);
+    shader->setMat4("model", world.terrain->modelMat);
+    shader->setMat3("normalMatrix", world.terrain->normalMat);
+    world.terrain->Draw(*shader);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     for (auto &[id, trans] : world.transforms) {
@@ -262,6 +260,8 @@ void MovementSystem(World &world, float dt) {
 
       trans.transform.position.x += vel.velocity.x * dt;
       trans.transform.position.z += vel.velocity.z * dt;
+      trans.transform.position.y = world.terrain->terrainHeight(
+          trans.transform.position.x, trans.transform.position.z);
 
       if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
         float targetYaw = atan2(vel.velocity.x, vel.velocity.z);
