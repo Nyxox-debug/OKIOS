@@ -263,6 +263,14 @@ void MovementSystem(World &world, float dt) {
       trans.transform.position.y = world.terrain->terrainHeight(
           trans.transform.position.x, trans.transform.position.z);
 
+      glm::vec4 bounds = world.terrain->getBounds();
+
+      trans.transform.position.x =
+          glm::clamp(trans.transform.position.x, world.terrain->getBounds().x,
+                     world.terrain->getBounds().y);
+      trans.transform.position.z =
+          glm::clamp(trans.transform.position.z, bounds.z, bounds.w);
+
       if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
         float targetYaw = atan2(vel.velocity.x, vel.velocity.z);
         trans.transform.rotation.y =

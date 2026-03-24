@@ -7,6 +7,7 @@ Terrain::Terrain(int gridSize, float cellSize, glm::vec2 offset) {
   normalMat = glm::mat3(glm::transpose(glm::inverse(modelMat)));
   this->offset = offset;
   this->cellSize = cellSize;
+  this->gridSize = gridSize;
   generate(gridSize, cellSize);
 }
 
@@ -42,8 +43,18 @@ float Terrain::terrainHeight(float x, float z) {
   glm::vec2 localSpace = glm::vec2(x - offset.x, z - offset.y);
   int cellX = (int)(localSpace.x / cellSize);
   int cellZ = (int)(localSpace.y / cellSize);
-  // TODO: return the right height when mountains and hills are added 
+  // TODO: return the right height when mountains and hills are added
   return 0.0;
+};
+
+glm::vec4 Terrain::getBounds() {
+  float minX = offset.x;
+  float maxX = offset.x + (gridSize * cellSize);
+
+  float minZ = offset.y;
+  float maxZ = offset.y + (gridSize * cellSize);
+
+  return glm::vec4{minX, maxX, minZ, maxZ};
 };
 
 void Terrain::Draw(Shader &shader) { mesh->Draw(shader); }

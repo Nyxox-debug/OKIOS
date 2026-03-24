@@ -9,8 +9,10 @@ public:
   float terrainHeight(float x, float z);
   glm::vec2 offset;
   float cellSize;
+  float gridSize;
   glm::mat4 modelMat;
   glm::mat3 normalMat;
+  glm::vec4 getBounds();
 
 private:
   std::unique_ptr<Mesh> mesh;
