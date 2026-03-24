@@ -225,20 +225,16 @@ void Engine::run() {
     shader->setVec3("viewPos", camera->Position);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glm::mat4 terrainModel = glm::mat4(1.0f);
-    terrainModel =
-        glm::translate(terrainModel, glm::vec3(-25.0f, -0.5f, -25.0f));
-    shader->setMat4("model", terrainModel);
-    shader->setMat3("normalMatrix",
-                    glm::mat3(glm::transpose(glm::inverse(terrainModel))));
+    shader->setMat4("model", terrain->modelMat);
+    shader->setMat3("normalMatrix", terrain->normalMat);
     terrain->Draw(*shader);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     for (auto &[id, trans] : world.transforms) {
       glm::mat4 model = trans.transform.getModelMatrix();
       shader->setMat4("model", model);
-      shader->setMat3("normalMatrix",
-                      glm::mat3(glm::transpose(glm::inverse(model))));
+      shader->setMat3("normalMatrix", trans.normalMatrix);
+
       if (world.meshes.count(id)) {
         world.meshes.at(id).mesh->Draw(*shader);
       }
@@ -272,6 +268,11 @@ void MovementSystem(World &world, float dt) {
         trans.transform.rotation.y =
             glm::mix(trans.transform.rotation.y, targetYaw, 0.1f);
       }
+
+      trans.normalMatrix = glm::mat3(glm::transpose(glm::inverse(
+          trans.transform
+              .getModelMatrix()))); // NOTE: I used normalMatrix for transforms
+                                    // under non-uniform scale
     }
   }
 }

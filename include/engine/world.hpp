@@ -10,6 +10,7 @@ struct VelocityComponent {
 };
 struct TransformComponent {
   Transform transform;
+  glm::mat3 normalMatrix;
 };
 struct MeshComponent {
   std::shared_ptr<Mesh> mesh;
