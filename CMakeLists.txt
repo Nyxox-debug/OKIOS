@@ -27,9 +27,8 @@ endif()
 add_executable(engine
     src/main.cpp
     src/engine.cpp
-    src/creature/mesh.cpp
+    src/mesh.cpp
     src/shader/shader.cpp
-    src/creature/creature.cpp
     src/camera.cpp
     src/terrain/terrain.cpp
     src/transform.cpp

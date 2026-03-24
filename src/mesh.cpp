@@ -1,4 +1,4 @@
-#include "engine/creature/mesh.hpp"
+#include "engine/mesh.hpp"
 
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices) {
   this->vertices = vertices;

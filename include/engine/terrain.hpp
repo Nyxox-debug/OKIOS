@@ -1,5 +1,5 @@
 #pragma once
-#include "creature/mesh.hpp"
+#include "mesh.hpp"
 #include <memory>
 
 class Terrain {

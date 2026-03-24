@@ -1,4 +1,4 @@
-#include "creature/mesh.hpp"
+#include "mesh.hpp"
 #include "transform.hpp"
 #include <memory>
 #include <optional>
