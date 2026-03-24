@@ -17,6 +17,17 @@ void World::addTransformComponent(int entityID, TransformComponent trans) {
   transforms[entityID] = trans;
 }
 
+void World::addLightComponent(int entityID, LightComponent light) {
+  lightSources[entityID] = light;
+}
+
+void World::destroyEntity(int entityID) {
+  velocities.erase(entityID);
+  transforms.erase(entityID);
+  meshes.erase(entityID);
+  lightSources.erase(entityID);
+}
+
 std::optional<TransformComponent> World::getTransformComponent(int entityID) {
   if (transforms.count(entityID))
     return transforms.at(entityID);

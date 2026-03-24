@@ -124,6 +124,13 @@ bool Engine::init() {
   return true;
 }
 
+void LightSystem(World &world, Shader &shader) {
+  for (auto &[id, light] : world.lightSources) {
+    shader.setVec3("lightDir", light.direction);
+    shader.setVec3("lightColor", light.color);
+  }
+}
+
 void Engine::run() {
   if (!running)
     return;
@@ -169,6 +176,12 @@ void Engine::run() {
     indices.insert(indices.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
   }
 
+  int light = world.createEntity();
+  world.addLightComponent(light, LightComponent{
+                                     glm::vec3(0.0f, -1.0f, 0.2f), // direction
+                                     glm::vec3(1.0f, 1.0f, 1.0f)   // color
+                                 });
+
   for (int i = 0; i < 10; i++) {
     int entity = world.createEntity();
     TransformComponent t;
@@ -203,9 +216,12 @@ void Engine::run() {
     shader->use();
     shader->setMat4("view", view);
     shader->setMat4("projection", projection);
-    // shader->setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
-    shader->setVec3("lightDir", glm::vec3(0.0f, -1.0f, 0.2f));
-    shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+    // // shader->setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
+    // shader->setVec3("lightDir", glm::vec3(0.0f, -1.0f, 0.2f));
+    // shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+
+    LightSystem(world, *shader);
+
     shader->setVec3("viewPos", camera->Position);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
