@@ -14,11 +14,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # Vendors
-add_subdirectory(vendor/glm)
+add_subdirectory(vendors/glm)
 
 
-add_library(glad STATIC vendor/glad/src/glad.c)
-target_include_directories(glad PUBLIC vendor/glad/include)
+add_library(glad STATIC vendors/glad/src/glad.c)
+target_include_directories(glad PUBLIC vendors/glad/include)
 if(UNIX AND NOT APPLE)
     target_link_libraries(glad PRIVATE dl)
 endif()
@@ -46,5 +46,5 @@ target_link_libraries(engine
 target_include_directories(engine
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendors
 )
