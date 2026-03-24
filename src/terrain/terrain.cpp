@@ -1,6 +1,8 @@
+#define STB_PERLIN_IMPLEMENTATION
+#include "engine/stb_perlin.h"
+
 #include "engine/terrain.hpp"
-#include <cmath>
-#include <glm/glm.hpp>
+// #include <cmath>
 
 Terrain::Terrain(int gridSize, float cellSize, glm::vec2 offset) {
   modelMat = glm::mat4(1.0f);
@@ -20,8 +22,8 @@ void Terrain::generate(int gridSize, float cellSize) {
   for (int z = 0; z <= gridSize; z++) {
     for (int x = 0; x <= gridSize; x++) {
       Vertex v;
-      // float sine = 1.2f * sin(x * cellSize) + sin(z * cellSize);
-      float sine = sin(x * cellSize * 0.3f);
+      // float sine = sin(x * cellSize * 0.3f);
+      float sine = stb_perlin_noise3(x * 0.1f, 0, z * 0.1f, 0, 0, 0);
       heights.push_back(sine);
       v.Position = {x * cellSize, sine, z * cellSize};
       v.Color = {0.2f, 0.5f, 0.2f};
