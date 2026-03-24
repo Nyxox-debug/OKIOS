@@ -251,6 +251,9 @@ void MovementSystem(World &world, float dt) {
 
       vel.velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
 
+      // Gravity
+      vel.velocity.y += -9.8f * dt;
+
       float maxSpeed = 2.0f;
       vel.velocity.x = glm::clamp(vel.velocity.x, -maxSpeed, maxSpeed);
       vel.velocity.z = glm::clamp(vel.velocity.z, -maxSpeed, maxSpeed);
@@ -262,12 +265,21 @@ void MovementSystem(World &world, float dt) {
       trans.transform.position.z += vel.velocity.z * dt;
 
       trans.transform.position.x =
-          glm::clamp(trans.transform.position.x, world.terrain->bounds.x, world.terrain->bounds.y);
+          glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
+                     world.terrain->bounds.y);
       trans.transform.position.z =
-          glm::clamp(trans.transform.position.z, world.terrain->bounds.z, world.terrain->bounds.w);
+          glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
+                     world.terrain->bounds.w);
 
-      trans.transform.position.y = world.terrain->terrainHeight(
-          trans.transform.position.x, trans.transform.position.z);
+      // trans.transform.position.y = world.terrain->terrainHeight(
+      //     trans.transform.position.x, trans.transform.position.z);
+      trans.transform.position.y += vel.velocity.y * dt;
+
+      float groundY = world.terrain->terrainHeight(trans.transform.position.x, trans.transform.position.z);
+      if (trans.transform.position.y < groundY) {
+        vel.velocity.y = 0;
+        trans.transform.position.y = groundY;
+      }
 
       if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
         float targetYaw = atan2(vel.velocity.x, vel.velocity.z);
