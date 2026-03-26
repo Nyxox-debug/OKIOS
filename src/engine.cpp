@@ -245,10 +245,10 @@ void Engine::run() {
 void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
     for (auto &[idB, transB] : world.transforms) {
-      bool bothHaveVelocity =
-          world.velocities.count(idA) && world.velocities.count(idB);
       if (idA >= idB)
         continue;
+      bool bothHaveVelocity =
+          world.velocities.count(idA) && world.velocities.count(idB);
       glm::vec3 aMin =
           transA.transform.position + glm::vec3(-0.5f, -0.5f, -0.5f);
       glm::vec3 aMax = transA.transform.position + glm::vec3(0.5f, 0.5f, 0.5f);
