@@ -242,6 +242,41 @@ void Engine::run() {
     glfwPollEvents();
   }
 }
+void CollisionSystem(World &world) {
+  for (auto &[idA, transA] : world.transforms) {
+    for (auto &[idB, transB] : world.transforms) {
+      if (idA >= idB)
+        continue;
+      glm::vec3 aMin =
+          transA.transform.position + glm::vec3(-0.5f, -0.5f, -0.5f);
+      glm::vec3 aMax = transA.transform.position + glm::vec3(0.5f, 0.5f, 0.5f);
+
+      glm::vec3 bMin =
+          transB.transform.position + glm::vec3(-0.5f, -0.5f, -0.5f);
+      glm::vec3 bMax = transB.transform.position + glm::vec3(0.5f, 0.5f, 0.5f);
+
+      bool overlaps = aMin.x < bMax.x && bMin.x < aMax.x && aMin.y < bMax.y &&
+                      bMin.y < aMax.y && aMin.z < bMax.z && bMin.z < aMax.z;
+
+      float overlapX = std::min(aMax.x, bMax.x) - std::max(aMin.x, bMin.x);
+      float overlapY = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
+      float overlapZ = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
+
+      if (overlapX < overlapY && overlapX < overlapZ) {
+        float pushX = overlapX * 0.5f;
+        if (transA.transform.position.x < transB.transform.position.x) {
+          transA.transform.position.x -= pushX;
+          transB.transform.position.x += pushX;
+        } else {
+          transA.transform.position.x += pushX;
+          transB.transform.position.x -= pushX;
+        }
+      } else if (overlapY < overlapZ) {
+      } else {
+      }
+    }
+  }
+}
 
 void MovementSystem(World &world, float dt) {
   for (auto &[id, vel] : world.velocities) {
@@ -275,7 +310,8 @@ void MovementSystem(World &world, float dt) {
       //     trans.transform.position.x, trans.transform.position.z);
       trans.transform.position.y += vel.velocity.y * dt;
 
-      float groundY = world.terrain->terrainHeight(trans.transform.position.x, trans.transform.position.z);
+      float groundY = world.terrain->terrainHeight(trans.transform.position.x,
+                                                   trans.transform.position.z);
       if (trans.transform.position.y < groundY) {
         vel.velocity.y = 0;
         trans.transform.position.y = groundY;
