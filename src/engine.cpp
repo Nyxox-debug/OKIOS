@@ -245,6 +245,8 @@ void Engine::run() {
 void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
     for (auto &[idB, transB] : world.transforms) {
+      bool bothHaveVelocity =
+          world.velocities.count(idA) && world.velocities.count(idB);
       if (idA >= idB)
         continue;
       glm::vec3 aMin =
@@ -262,21 +264,56 @@ void CollisionSystem(World &world) {
       float overlapY = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
       float overlapZ = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
 
-      if (overlapX < overlapY && overlapX < overlapZ) {
-        float pushX = overlapX * 0.5f;
-        if (transA.transform.position.x < transB.transform.position.x) {
-          transA.transform.position.x -= pushX;
-          transB.transform.position.x += pushX;
+      if (overlaps) {
+
+        if (overlapX < overlapY && overlapX < overlapZ) {
+          float pushX = overlapX * 0.5f;
+          if (transA.transform.position.x < transB.transform.position.x) {
+            transA.transform.position.x -= pushX;
+            transB.transform.position.x += pushX;
+          } else {
+            transA.transform.position.x += pushX;
+            transB.transform.position.x -= pushX;
+          }
+          if (bothHaveVelocity) {
+            auto &velA = world.velocities.at(idA);
+            auto &velB = world.velocities.at(idB);
+            std::swap(velA.velocity.x, velB.velocity.x);
+          }
+        } else if (overlapY < overlapZ) {
+          float pushY = overlapY * 0.5f;
+          if (transA.transform.position.y < transB.transform.position.y) {
+            transA.transform.position.y -= pushY;
+            transB.transform.position.y += pushY;
+          } else {
+            transA.transform.position.y += pushY;
+            transB.transform.position.y -= pushY;
+          }
+
+          if (bothHaveVelocity) {
+            auto &velA = world.velocities.at(idA);
+            auto &velB = world.velocities.at(idB);
+            std::swap(velA.velocity.y, velB.velocity.y);
+          }
         } else {
-          transA.transform.position.x += pushX;
-          transB.transform.position.x -= pushX;
+          float pushZ = overlapZ * 0.5f;
+          if (transA.transform.position.z < transB.transform.position.z) {
+            transA.transform.position.z -= pushZ;
+            transB.transform.position.z += pushZ;
+          } else {
+            transA.transform.position.z += pushZ;
+            transB.transform.position.z -= pushZ;
+          }
+          if (bothHaveVelocity) {
+            auto &velA = world.velocities.at(idA);
+            auto &velB = world.velocities.at(idB);
+            std::swap(velA.velocity.z, velB.velocity.z);
+          }
         }
-      } else if (overlapY < overlapZ) {
-      } else {
       }
     }
   }
-}
+};
 
 void MovementSystem(World &world, float dt) {
   for (auto &[id, vel] : world.velocities) {
@@ -325,13 +362,16 @@ void MovementSystem(World &world, float dt) {
 
       trans.normalMatrix = glm::mat3(glm::transpose(glm::inverse(
           trans.transform
-              .getModelMatrix()))); // NOTE: I used normalMatrix for transforms
-                                    // under non-uniform scale
+              .getModelMatrix()))); // NOTE: I used normalMatrix for
+                                    // transforms under non-uniform scale
     }
   }
 }
 
-void Engine::update(float dt) { MovementSystem(world, dt); }
+void Engine::update(float dt) {
+  MovementSystem(world, dt);
+  CollisionSystem(world);
+}
 
 void Engine::shutdown() {
   if (window) {
