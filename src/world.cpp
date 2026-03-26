@@ -5,12 +5,14 @@ void World::init() {
   terrain = std::make_unique<Terrain>(50, 1.0f, glm::vec2{-25.0f, -25.0f});
 }
 
-int World::createEntity() {
-  return nextID++;
-}
+int World::createEntity() { return nextID++; }
 
 void World::addVelocityComponent(int entityID, VelocityComponent vel) {
   velocities[entityID] = vel;
+}
+
+void World::addJointComponent(int entityID, JointComponent joint) {
+  joints[entityID] = joint;
 }
 
 void World::addMeshComponent(int entityID, MeshComponent mesh) {

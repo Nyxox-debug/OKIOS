@@ -44,6 +44,16 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
+void JointSystem(World &world) {
+  for (auto &[id, joint] : world.joints) {
+    if (!world.transforms.count(id) || !world.transforms.count(joint.parentID))
+      continue;
+    auto &parentTrans = world.transforms.at(joint.parentID).transform;
+    auto &childTrans = world.transforms.at(id).transform;
+    childTrans.position = parentTrans.position + joint.localOffset;
+  }
+}
+
 bool Engine::init() {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -180,19 +190,60 @@ void Engine::run() {
                                      glm::vec3(1.0f, 1.0f, 1.0f)   // color
                                  });
 
-  for (int i = 0; i < 10; i++) {
-    int entity = world.createEntity();
+  // for (int i = 0; i < 10; i++) {
+  //   int entity = world.createEntity();
+  //   TransformComponent t;
+  //   VelocityComponent v;
+  //   MeshComponent m;
+  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
+  //   t.transform.position = {(float)i, 0.0f, 0.0f};
+  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
+  //   v.velocity = {0.0f, 0.0f, 0.0f};
+  //
+  //   world.addMeshComponent(entity, m);
+  //   world.addTransformComponent(entity, t);
+  //   world.addVelocityComponent(entity, v);
+  // }
+
+  // Segment 1 — torso (has velocity, moves around)
+  int torso = world.createEntity();
+  {
     TransformComponent t;
     VelocityComponent v;
     MeshComponent m;
     m.mesh = std::make_shared<Mesh>(vertices, indices);
-    t.transform.position = {(float)i, 0.0f, 0.0f};
+    t.transform.position = {5.0f, 2.0f, 5.0f};
     t.transform.scale = {1.0f, 1.0f, 1.0f};
     v.velocity = {0.0f, 0.0f, 0.0f};
+    world.addTransformComponent(torso, t);
+    world.addVelocityComponent(torso, v);
+    world.addMeshComponent(torso, m);
+  }
 
-    world.addMeshComponent(entity, m);
-    world.addTransformComponent(entity, t);
-    world.addVelocityComponent(entity, v);
+  // Segment 2 — attached to right of torso
+  int seg2 = world.createEntity();
+  {
+    TransformComponent t;
+    MeshComponent m;
+    m.mesh = std::make_shared<Mesh>(vertices, indices);
+    t.transform.position = {0.0f, 0.0f, 0.0f};
+    t.transform.scale = {1.0f, 1.0f, 1.0f};
+    world.addTransformComponent(seg2, t);
+    world.addMeshComponent(seg2, m);
+    world.addJointComponent(seg2, JointComponent{torso, {1.5f, 0.0f, 0.0f}});
+  }
+
+  // Segment 3 — attached to right of seg2
+  int seg3 = world.createEntity();
+  {
+    TransformComponent t;
+    MeshComponent m;
+    m.mesh = std::make_shared<Mesh>(vertices, indices);
+    t.transform.position = {0.0f, 0.0f, 0.0f};
+    t.transform.scale = {1.0f, 1.0f, 1.0f};
+    world.addTransformComponent(seg3, t);
+    world.addMeshComponent(seg3, m);
+    world.addJointComponent(seg3, JointComponent{seg2, {1.5f, 0.0f, 0.0f}});
   }
 
   while (!glfwWindowShouldClose(window)) {
@@ -370,6 +421,7 @@ void MovementSystem(World &world, float dt) {
 
 void Engine::update(float dt) {
   MovementSystem(world, dt);
+  JointSystem(world);
   CollisionSystem(world);
 }
 

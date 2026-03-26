@@ -20,6 +20,10 @@ struct LightComponent {
   glm::vec3 direction;
   glm::vec3 color;
 };
+struct JointComponent {
+  int parentID;
+  glm::vec3 localOffset;
+};
 
 class World {
 private:
@@ -30,17 +34,17 @@ public:
   std::unordered_map<int, TransformComponent> transforms;
   std::unordered_map<int, MeshComponent> meshes;
   std::unordered_map<int, LightComponent> lightSources;
+  std::unordered_map<int, JointComponent> joints;
   std::unique_ptr<Terrain> terrain;
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
   void addTransformComponent(int entityID, TransformComponent trans);
   void addMeshComponent(int entityID, MeshComponent mesh);
   void addLightComponent(int entityID, LightComponent light);
+  void addJointComponent(int entityID, JointComponent joint);
   void destroyEntity(int entityID);
   int createEntity();
   std::optional<VelocityComponent> getVelocityComponent(int entityID);
   std::optional<TransformComponent> getTransformComponent(int entityID);
   void init();
-
-
 };
