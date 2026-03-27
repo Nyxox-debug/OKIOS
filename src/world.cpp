@@ -31,6 +31,10 @@ void World::addMotorComponent(int entityID, MotorComponent motor) {
   motors[entityID] = motor;
 }
 
+void World::addFoodComponent(int entityID, FoodComponent food) {
+  foods[entityID] = food;
+}
+
 void World::destroyEntity(int entityID) {
   velocities.erase(entityID);
   transforms.erase(entityID);

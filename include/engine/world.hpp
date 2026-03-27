@@ -34,6 +34,10 @@ struct MotorComponent {
   float strength;
 };
 
+struct FoodComponent {
+    float nutritionValue;
+};
+
 class World {
 private:
   int nextID = 0;
@@ -45,6 +49,7 @@ public:
   std::unordered_map<int, LightComponent> lightSources;
   std::unordered_map<int, JointComponent> joints;
   std::unordered_map<int, MotorComponent> motors;
+  std::unordered_map<int, FoodComponent> foods;
   std::unique_ptr<Terrain> terrain;
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
@@ -53,6 +58,7 @@ public:
   void addLightComponent(int entityID, LightComponent light);
   void addJointComponent(int entityID, JointComponent joint);
   void addMotorComponent(int entityID, MotorComponent motor);
+  void addFoodComponent(int entityID, FoodComponent food);
   void destroyEntity(int entityID);
   int createEntity();
   std::optional<VelocityComponent> getVelocityComponent(int entityID);

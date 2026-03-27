@@ -182,6 +182,11 @@ void Engine::run() {
       {{-0.5f, -0.5f, -0.5f}, {0, 0, 0}, {0, -1, 0}},
   };
 
+  std::vector<Vertex> foodVertices = vertices; // copy the cube shape
+  for (auto &v : foodVertices) {
+    v.Color = {1.0f, 0.8f, 0.0f}; // golden yellow
+  }
+
   std::vector<unsigned int> indices;
   for (unsigned int f = 0; f < 6; f++) {
     unsigned int b = f * 4;
@@ -193,6 +198,24 @@ void Engine::run() {
                                      glm::vec3(0.0f, -1.0f, 0.2f), // direction
                                      glm::vec3(1.0f, 1.0f, 1.0f)   // color
                                  });
+
+  for (int i = 0; i < 20; i++) {
+    float x = (rand() % 100) - 50.0f;
+    float z = (rand() % 100) - 50.0f;
+    float y = world.terrain->terrainHeight(x, z);
+
+    int food = world.createEntity();
+    TransformComponent t;
+    t.transform.position = {x, y + 0.3f, z};
+    t.transform.scale = {0.3f, 0.3f, 0.3f};
+
+    MeshComponent m;
+    m.mesh = std::make_shared<Mesh>(foodVertices, indices);
+
+    world.addTransformComponent(food, t);
+    world.addMeshComponent(food, m);
+    world.addFoodComponent(food, FoodComponent{1.0f});
+  }
 
   // for (int i = 0; i < 10; i++) {
   //   int entity = world.createEntity();
@@ -225,10 +248,7 @@ void Engine::run() {
   }
 
   world.addMotorComponent(torso,
-                          MotorComponent{
-                              glm::vec3(15.0f, 0.0f, 15.0f),
-                              5.0f
-                          });
+                          MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
 
   // Segment 2 — attached to right of torso
   int seg2 = world.createEntity();
@@ -390,6 +410,28 @@ void CollisionSystem(World &world) {
   }
 };
 
+void FoodSystem(World &world) {
+  for (auto &[foodID, food] : world.foods) {
+    if (!world.transforms.count(foodID))
+      continue;
+    glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
+
+    for (auto &[agentID, vel] : world.velocities) {
+      if (!world.transforms.count(agentID))
+        continue;
+      glm::vec3 agentPos = world.transforms.at(agentID).transform.position;
+      float dist = glm::length(agentPos - foodPos);
+      if (dist < 1.5f) {
+        float x = (rand() % 100) - 50.0f;
+        float z = (rand() % 100) - 50.0f;
+        float y = world.terrain->terrainHeight(x, z);
+        world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
+        break;
+      }
+    }
+  }
+}
+
 void MovementSystem(World &world, float dt) {
   for (auto &[id, vel] : world.velocities) {
     if (world.transforms.count(id)) {
@@ -446,6 +488,7 @@ void MovementSystem(World &world, float dt) {
 void Engine::update(float dt) {
   MotorSystem(world, dt);
   MovementSystem(world, dt);
+  FoodSystem(world);
   JointSystem(world);
   CollisionSystem(world);
 }
