@@ -245,36 +245,39 @@ void Engine::run() {
     world.addTransformComponent(torso, t);
     world.addVelocityComponent(torso, v);
     world.addMeshComponent(torso, m);
+    world.addLifeComponent(torso, LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
   }
 
   world.addMotorComponent(torso,
                           MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
 
+  // TODO: Better Segment Code
+
   // Segment 2 — attached to right of torso
-  int seg2 = world.createEntity();
-  {
-    TransformComponent t;
-    MeshComponent m;
-    m.mesh = std::make_shared<Mesh>(vertices, indices);
-    t.transform.position = {0.0f, 0.0f, 0.0f};
-    t.transform.scale = {1.0f, 1.0f, 1.0f};
-    world.addTransformComponent(seg2, t);
-    world.addMeshComponent(seg2, m);
-    world.addJointComponent(seg2, JointComponent{torso, {1.5f, 0.0f, 0.0f}});
-  }
+  // int seg2 = world.createEntity();
+  // {
+  //   TransformComponent t;
+  //   MeshComponent m;
+  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
+  //   t.transform.position = {0.0f, 0.0f, 0.0f};
+  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
+  //   world.addTransformComponent(seg2, t);
+  //   world.addMeshComponent(seg2, m);
+  //   world.addJointComponent(seg2, JointComponent{torso, {1.5f, 0.0f, 0.0f}});
+  // }
 
   // Segment 3 — attached to right of seg2
-  int seg3 = world.createEntity();
-  {
-    TransformComponent t;
-    MeshComponent m;
-    m.mesh = std::make_shared<Mesh>(vertices, indices);
-    t.transform.position = {0.0f, 0.0f, 0.0f};
-    t.transform.scale = {1.0f, 1.0f, 1.0f};
-    world.addTransformComponent(seg3, t);
-    world.addMeshComponent(seg3, m);
-    world.addJointComponent(seg3, JointComponent{seg2, {1.5f, 0.0f, 0.0f}});
-  }
+  // int seg3 = world.createEntity();
+  // {
+  //   TransformComponent t;
+  //   MeshComponent m;
+  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
+  //   t.transform.position = {0.0f, 0.0f, 0.0f};
+  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
+  //   world.addTransformComponent(seg3, t);
+  //   world.addMeshComponent(seg3, m);
+  //   world.addJointComponent(seg3, JointComponent{seg2, {1.5f, 0.0f, 0.0f}});
+  // }
 
   while (!glfwWindowShouldClose(window)) {
     float currentFrame = glfwGetTime();
@@ -439,6 +442,19 @@ void CollisionSystem(World &world) {
   }
 };
 
+void LifeSystem(World &world, float dt) {
+  std::vector<int> dead;
+  for (auto &[id, life] : world.lives) {
+    life.hunger += 5.0f * dt;
+    life.hunger = glm::clamp(life.hunger, 0.0f, life.maxHunger);
+    life.health -= (life.hunger / life.maxHunger) * 10.0f * dt;
+    if (life.health <= 0)
+      dead.push_back(id);
+  }
+  for (int id : dead)
+    world.destroyEntity(id);
+}
+
 void FoodSystem(World &world) {
   for (auto &[foodID, food] : world.foods) {
     if (!world.transforms.count(foodID))
@@ -455,6 +471,9 @@ void FoodSystem(World &world) {
         float z = (rand() % 100) - 50.0f;
         float y = world.terrain->terrainHeight(x, z);
         world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
+        if (world.lives.count(agentID)) {
+          world.lives.at(agentID).hunger = 0.0f;
+        }
         break;
       }
     }
@@ -518,6 +537,7 @@ void Engine::update(float dt) {
   MotorSystem(world, dt);
   MovementSystem(world, dt);
   FoodSystem(world);
+  LifeSystem(world, dt);
   JointSystem(world);
   CollisionSystem(world);
 }
