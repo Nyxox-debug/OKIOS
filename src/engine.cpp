@@ -326,16 +326,45 @@ void Engine::run() {
 
 void MotorSystem(World &world, float dt) {
   for (auto &[id, motor] : world.motors) {
-    if (world.transforms.count(id) && world.velocities.count(id)) {
-      glm::vec3 diff =
-          motor.target - world.transforms.at(id).transform.position;
-      if (glm::length(diff) < 0.01f)
-        continue;
-      glm::vec3 direction = glm::normalize(diff);
-      world.velocities.at(id).velocity += direction * motor.strength * dt;
+    if (!world.transforms.count(id) || !world.velocities.count(id))
+      continue;
+
+    float nearestDist = FLT_MAX;
+    glm::vec3 nearestFood = motor.target;
+
+    for (auto &[foodID, food] : world.foods) {
+
+      glm::vec3 agentPos = world.transforms.at(id).transform.position;
+      glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
+      float dist = glm::length(agentPos - foodPos);
+      if (nearestDist > dist) {
+        nearestDist = dist;
+        nearestFood = foodPos;
+      }
     }
+
+    motor.target = nearestFood;
+
+    glm::vec3 diff = motor.target - world.transforms.at(id).transform.position;
+    if (glm::length(diff) < 0.01f)
+      continue;
+    glm::vec3 direction = glm::normalize(diff);
+    world.velocities.at(id).velocity += direction * motor.strength * dt;
   }
 }
+
+// void MotorSystem(World &world, float dt) {
+//   for (auto &[id, motor] : world.motors) {
+//     if (world.transforms.count(id) && world.velocities.count(id)) {
+//       glm::vec3 diff =
+//           motor.target - world.transforms.at(id).transform.position;
+//       if (glm::length(diff) < 0.01f)
+//         continue;
+//       glm::vec3 direction = glm::normalize(diff);
+//       world.velocities.at(id).velocity += direction * motor.strength * dt;
+//     }
+//   }
+// }
 
 void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
