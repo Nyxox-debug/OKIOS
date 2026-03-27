@@ -50,7 +50,11 @@ void JointSystem(World &world) {
       continue;
     auto &parentTrans = world.transforms.at(joint.parentID).transform;
     auto &childTrans = world.transforms.at(id).transform;
-    childTrans.position = parentTrans.position + joint.localOffset;
+    glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), parentTrans.rotation.y,
+                                   glm::vec3(0, 1, 0));
+    glm::vec3 rotatedOffset =
+        glm::vec3(rotMat * glm::vec4(joint.localOffset, 0.0f));
+    childTrans.position = parentTrans.position + rotatedOffset;
   }
 }
 
@@ -220,6 +224,12 @@ void Engine::run() {
     world.addMeshComponent(torso, m);
   }
 
+  world.addMotorComponent(torso,
+                          MotorComponent{
+                              glm::vec3(15.0f, 0.0f, 15.0f), // target position
+                              5.0f                           // strength
+                          });
+
   // Segment 2 — attached to right of torso
   int seg2 = world.createEntity();
   {
@@ -293,6 +303,17 @@ void Engine::run() {
     glfwPollEvents();
   }
 }
+
+void MotorSystem(World &world, float dt) {
+  for (auto &[id, motor] : world.motors) {
+    if (world.transforms.count(id) && world.velocities.count(id)) {
+      glm::vec3 direction = glm::normalize(
+          motor.target - world.transforms.at(id).transform.position);
+      world.velocities.at(id).velocity += direction * motor.strength * dt;
+    }
+  }
+}
+
 void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
     for (auto &[idB, transB] : world.transforms) {
@@ -423,6 +444,7 @@ void Engine::update(float dt) {
   MovementSystem(world, dt);
   JointSystem(world);
   CollisionSystem(world);
+  MotorSystem(world, dt);
 }
 
 void Engine::shutdown() {

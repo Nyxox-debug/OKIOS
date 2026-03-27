@@ -27,6 +27,10 @@ void World::addLightComponent(int entityID, LightComponent light) {
   lightSources[entityID] = light;
 }
 
+void World::addMotorComponent(int entityID, MotorComponent motor) {
+  motors[entityID] = motor;
+}
+
 void World::destroyEntity(int entityID) {
   velocities.erase(entityID);
   transforms.erase(entityID);
