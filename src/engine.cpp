@@ -226,8 +226,8 @@ void Engine::run() {
 
   world.addMotorComponent(torso,
                           MotorComponent{
-                              glm::vec3(15.0f, 0.0f, 15.0f), // target position
-                              5.0f                           // strength
+                              glm::vec3(15.0f, 0.0f, 15.0f),
+                              5.0f
                           });
 
   // Segment 2 — attached to right of torso
@@ -307,8 +307,11 @@ void Engine::run() {
 void MotorSystem(World &world, float dt) {
   for (auto &[id, motor] : world.motors) {
     if (world.transforms.count(id) && world.velocities.count(id)) {
-      glm::vec3 direction = glm::normalize(
-          motor.target - world.transforms.at(id).transform.position);
+      glm::vec3 diff =
+          motor.target - world.transforms.at(id).transform.position;
+      if (glm::length(diff) < 0.01f)
+        continue;
+      glm::vec3 direction = glm::normalize(diff);
       world.velocities.at(id).velocity += direction * motor.strength * dt;
     }
   }
@@ -391,9 +394,9 @@ void MovementSystem(World &world, float dt) {
   for (auto &[id, vel] : world.velocities) {
     if (world.transforms.count(id)) {
       auto &trans = world.transforms.at(id);
-      vel.velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
-
-      vel.velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
+      // vel.velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
+      //
+      // vel.velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
 
       // Gravity
       vel.velocity.y += -9.8f * dt;
@@ -441,10 +444,10 @@ void MovementSystem(World &world, float dt) {
 }
 
 void Engine::update(float dt) {
+  MotorSystem(world, dt);
   MovementSystem(world, dt);
   JointSystem(world);
   CollisionSystem(world);
-  MotorSystem(world, dt);
 }
 
 void Engine::shutdown() {
