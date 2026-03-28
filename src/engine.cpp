@@ -145,6 +145,35 @@ void LightSystem(World &world, Shader &shader) {
   }
 }
 
+void spawnCreatures(World &world, int creatureCount,
+                    std::vector<Vertex> vertices,
+                    std::vector<unsigned int> indices) {
+  for (int x = 0; x < creatureCount; x++) {
+
+    int torso = world.createEntity();
+    {
+      float x = (rand() % 100) - 50.0f;
+      float z = (rand() % 100) - 50.0f;
+      float y = world.terrain->terrainHeight(x, z);
+      TransformComponent t;
+      VelocityComponent v;
+      MeshComponent m;
+      m.mesh = std::make_shared<Mesh>(vertices, indices);
+      t.transform.position = {x, y, z};
+      t.transform.scale = {1.0f, 1.0f, 1.0f};
+      v.velocity = {0.0f, 0.0f, 0.0f};
+      world.addTransformComponent(torso, t);
+      world.addVelocityComponent(torso, v);
+      world.addMeshComponent(torso, m);
+      world.addLifeComponent(torso,
+                             LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
+    }
+
+    world.addMotorComponent(
+        torso, MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
+  }
+}
+
 void Engine::run() {
   if (!running)
     return;
@@ -232,24 +261,7 @@ void Engine::run() {
   //   world.addVelocityComponent(entity, v);
   // }
 
-  // Segment 1 — torso (has velocity, moves around)
-  int torso = world.createEntity();
-  {
-    TransformComponent t;
-    VelocityComponent v;
-    MeshComponent m;
-    m.mesh = std::make_shared<Mesh>(vertices, indices);
-    t.transform.position = {5.0f, 2.0f, 5.0f};
-    t.transform.scale = {1.0f, 1.0f, 1.0f};
-    v.velocity = {0.0f, 0.0f, 0.0f};
-    world.addTransformComponent(torso, t);
-    world.addVelocityComponent(torso, v);
-    world.addMeshComponent(torso, m);
-    world.addLifeComponent(torso, LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
-  }
-
-  world.addMotorComponent(torso,
-                          MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
+  spawnCreatures(world, 10, vertices, indices);
 
   // TODO: Better Segment Code
 
