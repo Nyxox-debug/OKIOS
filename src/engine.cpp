@@ -478,7 +478,7 @@ void FoodSystem(World &world) {
       continue;
     glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
 
-    for (auto &[agentID, vel] : world.velocities) {
+    for (auto &[agentID, life] : world.lives) {
       if (!world.transforms.count(agentID))
         continue;
       glm::vec3 agentPos = world.transforms.at(agentID).transform.position;
@@ -488,9 +488,7 @@ void FoodSystem(World &world) {
         float z = (rand() % 100) - 50.0f;
         float y = world.terrain->terrainHeight(x, z);
         world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
-        if (world.lives.count(agentID)) {
-          world.lives.at(agentID).hunger = 0.0f;
-        }
+        life.hunger = 0.0f;
         break;
       }
     }
