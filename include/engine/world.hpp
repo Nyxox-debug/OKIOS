@@ -1,3 +1,4 @@
+#include "brain.hpp"
 #include "glm/fwd.hpp"
 #include "mesh.hpp"
 #include "terrain.hpp"
@@ -8,6 +9,10 @@
 
 struct VelocityComponent {
   glm::vec3 velocity;
+};
+
+struct BrainComponent {
+  Brain brain;
 };
 
 struct TransformComponent {
@@ -35,7 +40,7 @@ struct MotorComponent {
 };
 
 struct FoodComponent {
-    float nutritionValue;
+  float nutritionValue;
 };
 
 struct LifeComponent {
@@ -55,6 +60,7 @@ public:
   std::unordered_map<int, MotorComponent> motors;
   std::unordered_map<int, FoodComponent> foods;
   std::unordered_map<int, LifeComponent> lives;
+  std::unordered_map<int, BrainComponent> sentients;
   std::unique_ptr<Terrain> terrain;
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
@@ -65,6 +71,7 @@ public:
   void addMotorComponent(int entityID, MotorComponent motor);
   void addFoodComponent(int entityID, FoodComponent food);
   void addLifeComponent(int entityID, LifeComponent life);
+  void addBrainComponent(int entityID, BrainComponent brain);
   void destroyEntity(int entityID);
   int createEntity();
   std::optional<VelocityComponent> getVelocityComponent(int entityID);

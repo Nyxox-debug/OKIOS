@@ -39,11 +39,16 @@ void World::addLifeComponent(int entityID, LifeComponent life) {
   lives[entityID] = life;
 }
 
+void World::addBrainComponent(int entityID, BrainComponent brain) {
+  sentients[entityID] = brain;
+}
+
 void World::destroyEntity(int entityID) {
   velocities.erase(entityID);
   transforms.erase(entityID);
   meshes.erase(entityID);
   lightSources.erase(entityID);
+  sentients.erase(entityID);
 }
 
 std::optional<TransformComponent> World::getTransformComponent(int entityID) {

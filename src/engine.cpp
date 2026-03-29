@@ -1,4 +1,5 @@
 #include "engine/engine.hpp"
+#include "engine/brain.hpp"
 #include "engine/camera.hpp"
 #include "engine/input.hpp"
 #include "glm/fwd.hpp"
@@ -171,6 +172,9 @@ void spawnCreatures(World &world, int creatureCount,
 
     world.addMotorComponent(
         torso, MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
+    BrainComponent b;
+    b.brain.init();
+    world.addBrainComponent(torso, b);
   }
 }
 
@@ -339,6 +343,7 @@ void Engine::run() {
   }
 }
 
+// Don't need this, motors are now handled by the brain System
 void MotorSystem(World &world, float dt) {
   for (auto &[id, motor] : world.motors) {
     if (!world.transforms.count(id) || !world.velocities.count(id))
@@ -492,6 +497,45 @@ void FoodSystem(World &world) {
   }
 }
 
+void BrainSystem(World &world, float dt) {
+  for (auto &[id, sentient] : world.sentients) {
+    if (world.lives.count(id) && world.motors.count(id)) {
+      auto &motor = world.motors.at(id);
+
+      float nearestDist = FLT_MAX;
+      glm::vec3 nearestFood = motor.target;
+      glm::vec2 nearestFoodxy = {nearestFood.x, nearestFood.y};
+
+      if (!world.transforms.count(id) || !world.velocities.count(id))
+        continue;
+      for (auto &[foodID, food] : world.foods) {
+        glm::vec3 agentPos = world.transforms.at(id).transform.position;
+        glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
+        float dist = glm::length(agentPos - foodPos);
+        if (nearestDist > dist) {
+          nearestDist = dist;
+          nearestFood = foodPos;
+        }
+      }
+
+      motor.target = nearestFood;
+      glm::vec3 agentPos = world.transforms.at(id).transform.position;
+      glm::vec3 diff = nearestFood - agentPos;
+      glm::vec2 directionOfFood = glm::normalize(glm::vec2(diff.x, diff.z));
+      float distanceToFood = glm::length(diff);
+
+      auto lifeComp = world.lives.at(id);
+      input in = {lifeComp.health, lifeComp.hunger, directionOfFood,
+                  distanceToFood};
+
+      output out = sentient.brain.forward(in);
+
+      glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
+      world.velocities.at(id).velocity += force * motor.strength * dt;
+    }
+  }
+}
+
 void MovementSystem(World &world, float dt) {
   for (auto &[id, vel] : world.velocities) {
     if (world.transforms.count(id)) {
@@ -546,7 +590,7 @@ void MovementSystem(World &world, float dt) {
 }
 
 void Engine::update(float dt) {
-  MotorSystem(world, dt);
+  BrainSystem(world, dt);
   MovementSystem(world, dt);
   FoodSystem(world);
   LifeSystem(world, dt);
