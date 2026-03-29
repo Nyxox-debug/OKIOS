@@ -42,7 +42,7 @@ output Brain::forward(const input &in) const {
   return {glm::vec2(outLayActivations[0], outLayActivations[1])};
 }
 
-// TODO: I don't actually get this part, I used AI
+// TODO: I don't actually get this part, I used AI for the backward function
 void Brain::backward(const std::vector<experience> &history,
                      float learningRate) {
   float gamma = 0.99f;
@@ -53,7 +53,7 @@ void Brain::backward(const std::vector<experience> &history,
   for (int t = history.size() - 2; t >= 0; t--) {
     G[t] = history[t].reward + gamma * G[t + 1];
   }
-  
+
   for (int t = 0; t < history.size(); t++) {
     forward(history[t].state); // repopulates hiddenLayActivations
 
@@ -87,4 +87,25 @@ void Brain::backward(const std::vector<experience> &history,
       biasHidden[i] += learningRate * hiddenDelta;
     }
   }
+}
+
+Brain Brain::mutate(float mutationRate) const {
+  Brain child = *this;
+
+  for (int i = 0; i < child.weightsInputHidden.size(); i++) {
+    child.weightsInputHidden[i] +=
+        ((rand() % 200) / 100.0f - 1.0f) * mutationRate;
+  }
+  for (int i = 0; i < child.weightsHiddenOutput.size(); i++) {
+    child.weightsHiddenOutput[i] +=
+        ((rand() % 200) / 100.0f - 1.0f) * mutationRate;
+  }
+  for (int i = 0; i < child.biasHidden.size(); i++) {
+    child.biasHidden[i] += ((rand() % 200) / 100.0f - 1.0f) * mutationRate;
+  }
+  for (int i = 0; i < child.biasOutput.size(); i++) {
+    child.biasOutput[i] += ((rand() % 200) / 100.0f - 1.0f) * mutationRate;
+  }
+
+  return child;
 }

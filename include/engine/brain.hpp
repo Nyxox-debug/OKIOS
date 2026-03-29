@@ -31,5 +31,6 @@ private:
 public:
   output forward(const input &in) const;
   void backward(const std::vector<experience> &history, float learningRate);
+  Brain mutate(float mutationRate) const;
   void init();
 };

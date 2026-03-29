@@ -15,6 +15,7 @@ struct VelocityComponent {
 struct BrainComponent {
   Brain brain;
   std::vector<experience> History;
+  int frameCount = 0;
 };
 
 struct TransformComponent {
@@ -47,7 +48,8 @@ struct FoodComponent {
 
 struct LifeComponent {
   float health, maxHealth, hunger, maxHunger;
-  float reward; 
+  float reward;
+  int mealAmount;
   int cumulativeReward;
 };
 
@@ -65,6 +67,8 @@ public:
   std::unordered_map<int, FoodComponent> foods;
   std::unordered_map<int, LifeComponent> lives;
   std::unordered_map<int, BrainComponent> sentients;
+  std::vector<Vertex> creatureVertices;
+  std::vector<unsigned int> creatureIndices;
   std::unique_ptr<Terrain> terrain;
 
   void addVelocityComponent(int entityID, VelocityComponent vel);

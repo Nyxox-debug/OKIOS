@@ -226,6 +226,9 @@ void Engine::run() {
     indices.insert(indices.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
   }
 
+  world.creatureVertices = vertices;
+  world.creatureIndices = indices;
+
   int light = world.createEntity();
   world.addLightComponent(light, LightComponent{
                                      glm::vec3(0.0f, -1.0f, 0.2f), // direction
@@ -480,6 +483,41 @@ void LifeSystem(World &world, float dt) {
   }
 }
 
+void ReproductionSystem(World &world) {
+  std::vector<int> toReproduce;
+  for (auto &[id, life] : world.lives) {
+    if (life.mealAmount >= 4 && world.sentients.count(id))
+      toReproduce.push_back(id);
+  }
+
+  for (int id : toReproduce) {
+    Brain childBrain = world.sentients.at(id).brain.mutate(0.1f);
+
+    glm::vec3 parentPos = world.transforms.at(id).transform.position;
+
+    int child = world.createEntity();
+    TransformComponent t;
+    VelocityComponent v;
+    MeshComponent m;
+    m.mesh =
+        std::make_shared<Mesh>(world.creatureVertices, world.creatureIndices);
+    t.transform.position = parentPos;
+    t.transform.scale = {1.0f, 1.0f, 1.0f};
+    v.velocity = {0.0f, 0.0f, 0.0f};
+    world.addTransformComponent(child, t);
+    world.addVelocityComponent(child, v);
+    world.addMeshComponent(child, m);
+    world.addLifeComponent(child, LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
+    world.addMotorComponent(child, MotorComponent{glm::vec3(0.0f), 5.0f});
+
+    BrainComponent b;
+    b.brain = childBrain;
+    world.addBrainComponent(child, b);
+
+    world.destroyEntity(id);
+  }
+}
+
 void FoodSystem(World &world) {
   for (auto &[foodID, food] : world.foods) {
     if (!world.transforms.count(foodID))
@@ -497,6 +535,7 @@ void FoodSystem(World &world) {
         float y = world.terrain->terrainHeight(x, z);
         world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
         life.hunger = 0.0f;
+        life.mealAmount += 1;
         break;
       }
     }
@@ -537,6 +576,11 @@ void BrainSystem(World &world, float dt) {
       output out = sentient.brain.forward(in);
 
       sentient.History.push_back({in, out, lifeComp.reward});
+      sentient.frameCount++;
+      if (sentient.frameCount % 500 == 0) {
+        sentient.brain.backward(sentient.History, 0.1f);
+        sentient.History.clear();
+      }
 
       glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
       world.velocities.at(id).velocity += force * motor.strength * dt;
@@ -602,6 +646,7 @@ void Engine::update(float dt) {
   MovementSystem(world, dt);
   FoodSystem(world);
   LifeSystem(world, dt);
+  ReproductionSystem(world);
   JointSystem(world);
   CollisionSystem(world);
 }
