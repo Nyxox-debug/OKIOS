@@ -465,11 +465,19 @@ void LifeSystem(World &world, float dt) {
     life.hunger += 5.0f * dt;
     life.hunger = glm::clamp(life.hunger, 0.0f, life.maxHunger);
     life.health -= (life.hunger / life.maxHunger) * 10.0f * dt;
+    life.reward =
+        (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
+    life.cumulativeReward += life.reward * dt;
     if (life.health <= 0)
       dead.push_back(id);
   }
-  for (int id : dead)
+  for (int id : dead) {
+    if (world.sentients.count(id)) {
+      auto &sentient = world.sentients.at(id);
+      sentient.brain.backward(sentient.History, 0.1);
+    }
     world.destroyEntity(id);
+  }
 }
 
 void FoodSystem(World &world) {
@@ -522,11 +530,13 @@ void BrainSystem(World &world, float dt) {
       glm::vec2 directionOfFood = glm::normalize(glm::vec2(diff.x, diff.z));
       float distanceToFood = glm::length(diff);
 
-      auto lifeComp = world.lives.at(id);
+      auto &lifeComp = world.lives.at(id);
       input in = {lifeComp.health, lifeComp.hunger, directionOfFood,
                   distanceToFood};
 
       output out = sentient.brain.forward(in);
+
+      sentient.History.push_back({in, out, lifeComp.reward});
 
       glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
       world.velocities.at(id).velocity += force * motor.strength * dt;

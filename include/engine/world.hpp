@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 struct VelocityComponent {
   glm::vec3 velocity;
@@ -13,6 +14,7 @@ struct VelocityComponent {
 
 struct BrainComponent {
   Brain brain;
+  std::vector<experience> History;
 };
 
 struct TransformComponent {
@@ -45,6 +47,8 @@ struct FoodComponent {
 
 struct LifeComponent {
   float health, maxHealth, hunger, maxHunger;
+  float reward; 
+  int cumulativeReward;
 };
 
 class World {
