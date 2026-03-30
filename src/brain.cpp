@@ -3,19 +3,22 @@
 
 void Brain::init() {
   for (int i = 0; i < weightsInputHidden.size(); i++) {
-    weightsInputHidden[i] = ((rand() % 200) / 100.0f) - 1.0f;
+    weightsInputHidden[i] = ((rand() % 200) / 1000.0f) - 0.1f;
   }
 
   for (int i = 0; i < weightsHiddenOutput.size(); i++) {
-    weightsHiddenOutput[i] = ((rand() % 200) / 100.0f) - 1.0f;
+    weightsHiddenOutput[i] = ((rand() % 200) / 1000.0f) - 0.1f;
   }
 
   for (int i = 0; i < biasHidden.size(); i++) {
-    biasHidden[i] = ((rand() % 200) / 100.0f) - 1.0f;
+    // biasHidden[i] = ((rand() % 200) / 100.0f) - 1.0f;
+    biasHidden[i] = 0.0f;
   }
 
   for (int i = 0; i < biasOutput.size(); i++) {
-    biasOutput[i] = ((rand() % 200) / 100.0f) - 1.0f;
+    // biasOutput[i] = ((rand() % 200) / 100.0f) - 1.0f;
+
+    biasOutput[i] = 0.0f;
   }
 };
 

@@ -307,7 +307,12 @@ void Engine::run() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     processInput();
-    update(deltaTime);
+    // update(deltaTime);
+    float fixedDt = 0.016f; // 60fps equivalent
+    int simSteps = 10;
+    for (int i = 0; i < simSteps; i++) {
+      update(fixedDt);
+    }
 
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 projection =
@@ -465,9 +470,12 @@ void CollisionSystem(World &world) {
 void LifeSystem(World &world, float dt) {
   std::vector<int> dead;
   for (auto &[id, life] : world.lives) {
-    life.hunger += 5.0f * dt;
+    // life.hunger += 5.0f * dt;
+    life.hunger += 0.5f * dt; // instead of 5.0f
     life.hunger = glm::clamp(life.hunger, 0.0f, life.maxHunger);
-    life.health -= (life.hunger / life.maxHunger) * 10.0f * dt;
+    // life.health -= (life.hunger / life.maxHunger) * 10.0f * dt;
+    life.health -=
+        (life.hunger / life.maxHunger) * 2.0f * dt; // instead of 10.0f
     life.reward =
         (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
     life.cumulativeReward += life.reward * dt;
@@ -578,7 +586,7 @@ void BrainSystem(World &world, float dt) {
       sentient.History.push_back({in, out, lifeComp.reward});
       sentient.frameCount++;
       if (sentient.frameCount % 500 == 0) {
-        sentient.brain.backward(sentient.History, 0.1f);
+        sentient.brain.backward(sentient.History, 0.5f);
         sentient.History.clear();
       }
 
