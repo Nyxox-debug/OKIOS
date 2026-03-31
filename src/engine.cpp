@@ -34,11 +34,9 @@ static float randInt(int lo, int hi) { // inclusive
   return std::uniform_int_distribution<int>(lo, hi)(getRng());
 }
 
-
 static void framebuffer_size_callback(GLFWwindow *, int width, int height) {
   glViewport(0, 0, width, height);
 }
-
 
 Engine::Engine() = default;
 Engine::~Engine() = default;
