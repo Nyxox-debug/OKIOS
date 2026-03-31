@@ -471,7 +471,7 @@ void Engine::run() {
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 projection =
         glm::perspective(glm::radians(camera->Zoom),
-                         (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+                         (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 300.0f);
 
     shader->use();
     shader->setMat4("view", view);
