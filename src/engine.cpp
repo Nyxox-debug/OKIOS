@@ -189,8 +189,10 @@ static void spawnCreature(World &world, const std::vector<Vertex> &verts,
 
 static void spawnFood(World &world, const std::vector<Vertex> &verts,
                       const std::vector<unsigned int> &idx) {
-  float x = randRange(-50.0f, 50.0f);
-  float z = randRange(-50.0f, 50.0f);
+  // float x = randRange(-50.0f, 50.0f);
+  // float z = randRange(-50.0f, 50.0f);
+  float x = randRange(-35.0f, 35.0f); // was -50 to 50
+  float z = randRange(-35.0f, 35.0f);
   float y = world.terrain->terrainHeight(x, z);
 
   int id = world.createEntity();
@@ -283,12 +285,28 @@ static void MovementSystem(World &world, float dt) {
 
     trans.transform.position += vel.velocity * dt;
 
-    trans.transform.position.x =
-        glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
-                   world.terrain->bounds.y);
-    trans.transform.position.z =
-        glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
-                   world.terrain->bounds.w);
+    // trans.transform.position.x =
+    //     glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
+    //                world.terrain->bounds.y);
+    // trans.transform.position.z =
+    //     glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
+    //                world.terrain->bounds.w);
+
+    if (trans.transform.position.x <= world.terrain->bounds.x ||
+        trans.transform.position.x >= world.terrain->bounds.y) {
+      trans.transform.position.x =
+          glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
+                     world.terrain->bounds.y);
+      vel.velocity.x = 0.0f;
+    }
+
+    if (trans.transform.position.z <= world.terrain->bounds.z ||
+        trans.transform.position.z >= world.terrain->bounds.w) {
+      trans.transform.position.z =
+          glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
+                     world.terrain->bounds.w);
+      vel.velocity.z = 0.0f;
+    }
 
     float groundY = world.terrain->terrainHeight(trans.transform.position.x,
                                                  trans.transform.position.z);
@@ -336,10 +354,11 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
 static void LifeSystem(World &world, float dt) {
   std::vector<int> dead;
   for (auto &[id, life] : world.lives) {
-    // life.hunger = glm::clamp(life.hunger + 0.01f * dt, 0.0f, life.maxHunger);
-    // life.health -= (life.hunger / life.maxHunger) * 2.0f * dt;
-    life.hunger = glm::clamp(life.hunger + 0.004f * dt, 0.0f, life.maxHunger);
-    life.health -= (life.hunger / life.maxHunger) * 1.0f * dt; // was 2.0f
+    // life.hunger = glm::clamp(life.hunger + 0.004f * dt, 0.0f,
+    // life.maxHunger); life.health -= (life.hunger / life.maxHunger) * 1.0f *
+    // dt; // was 2.0f
+    life.hunger = glm::clamp(life.hunger + 0.003f * dt, 0.0f, life.maxHunger);
+    life.health -= (life.hunger / life.maxHunger) * 0.8f * dt;
     life.reward =
         (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
     life.cumulativeReward += life.reward * dt;
@@ -374,7 +393,7 @@ static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
 
   std::vector<int> toReproduce;
   for (auto &[id, life] : world.lives)
-    if (life.mealAmount >= 2 && world.sentients.count(id))
+    if (life.mealAmount >= 4 && world.sentients.count(id))
       toReproduce.push_back(id);
 
   for (int id : toReproduce) {
@@ -560,5 +579,3 @@ void Engine::shutdown() {
   glfwTerminate();
   running = false;
 }
-
-
