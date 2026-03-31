@@ -3,7 +3,6 @@
 #include "engine/camera.hpp"
 #include "engine/input.hpp"
 #include "glm/fwd.hpp"
-#include <iostream>
 
 // clang-format off
 #include <glad/glad.h>
@@ -12,51 +11,51 @@
 #include <vector>
 // clang-format on
 
-#include <ctime>
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <iostream>
+#include <random>
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-void Engine::processInput() {
-  if (Input::IsKeyPressed(window, GLFW_KEY_W)) {
-    camera->ProcessKeyboard(FORWARD, deltaTime);
-  };
-  if (Input::IsKeyPressed(window, GLFW_KEY_S)) {
-    camera->ProcessKeyboard(BACKWARD, deltaTime);
-  };
-  if (Input::IsKeyPressed(window, GLFW_KEY_A)) {
-    camera->ProcessKeyboard(LEFT, deltaTime);
-  };
-  if (Input::IsKeyPressed(window, GLFW_KEY_D)) {
-    camera->ProcessKeyboard(RIGHT, deltaTime);
-  };
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-  if (Input::IsKeyPressed(window, GLFW_KEY_ESCAPE)) {
-    glfwSetWindowShouldClose(window, true);
-  };
+static std::mt19937 &getRng() {
+  static std::mt19937 rng(std::random_device{}());
+  return rng;
 }
+
+static float randRange(float lo, float hi) {
+  return std::uniform_real_distribution<float>(lo, hi)(getRng());
+}
+
+static float randInt(int lo, int hi) { // inclusive
+  return std::uniform_int_distribution<int>(lo, hi)(getRng());
+}
+
+// ─── Callbacks ──────────────────────────────────────────────────────────────
+
+static void framebuffer_size_callback(GLFWwindow *, int width, int height) {
+  glViewport(0, 0, width, height);
+}
+
+// ─── Engine lifecycle ───────────────────────────────────────────────────────
 
 Engine::Engine() = default;
 Engine::~Engine() = default;
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, width, height);
-}
-
-void JointSystem(World &world) {
-  for (auto &[id, joint] : world.joints) {
-    if (!world.transforms.count(id) || !world.transforms.count(joint.parentID))
-      continue;
-    auto &parentTrans = world.transforms.at(joint.parentID).transform;
-    auto &childTrans = world.transforms.at(id).transform;
-    glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), parentTrans.rotation.y,
-                                   glm::vec3(0, 1, 0));
-    glm::vec3 rotatedOffset =
-        glm::vec3(rotMat * glm::vec4(joint.localOffset, 0.0f));
-    childTrans.position = parentTrans.position + rotatedOffset;
-  }
+void Engine::processInput() {
+  if (Input::IsKeyPressed(window, GLFW_KEY_W))
+    camera->ProcessKeyboard(FORWARD, deltaTime);
+  if (Input::IsKeyPressed(window, GLFW_KEY_S))
+    camera->ProcessKeyboard(BACKWARD, deltaTime);
+  if (Input::IsKeyPressed(window, GLFW_KEY_A))
+    camera->ProcessKeyboard(LEFT, deltaTime);
+  if (Input::IsKeyPressed(window, GLFW_KEY_D))
+    camera->ProcessKeyboard(RIGHT, deltaTime);
+  if (Input::IsKeyPressed(window, GLFW_KEY_ESCAPE))
+    glfwSetWindowShouldClose(window, true);
 }
 
 bool Engine::init() {
@@ -64,14 +63,14 @@ bool Engine::init() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-  window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Simulation", NULL, NULL);
-  if (window == NULL) {
-    std::cout << "Failed to create GLFW window\n";
+  window =
+      glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Simulation", nullptr, nullptr);
+  if (!window) {
+    std::cerr << "Failed to create GLFW window\n";
     glfwTerminate();
     return false;
   }
@@ -80,130 +79,70 @@ bool Engine::init() {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    std::cout << "Failed to initialize GLAD\n";
+    std::cerr << "Failed to initialize GLAD\n";
     return false;
   }
 
   shader = std::make_unique<Shader>("../res/shaders/phong.vert",
                                     "../res/shaders/phong.frag");
 
-  // camera =
-  //     std::make_unique<Camera>(glm::vec3(4.5f, 20.0f, 18.0f),
-  //                              glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -55.0f);
-
-  // camera->MovementSpeed = 15.0f;
-
   camera =
-      std::make_unique<Camera>(glm::vec3(25.0f, 30.0f, 25.0f), // high and back
-                               glm::vec3(0.0f, 1.0f, 0.0f),    // up vector
-                               -135.0f, // yaw: pointing diagonally
-                               -45.0f   // pitch: looking down at 45°
-      );
-
-  camera->MovementSpeed = 20.0f; // faster movement for overview
+      std::make_unique<Camera>(glm::vec3(25.0f, 30.0f, 25.0f),
+                               glm::vec3(0.0f, 1.0f, 0.0f), -135.0f, -45.0f);
+  camera->MovementSpeed = 20.0f;
 
   glfwSetWindowUserPointer(window, this);
-
-  glfwSetCursorPosCallback(window, [](GLFWwindow *window, double xpos,
-                                      double ypos) {
-    static float lastX = SCR_WIDTH / 2.0f;
-    static float lastY = SCR_HEIGHT / 2.0f;
-    static bool firstMouse = true;
-
-    if (firstMouse) {
-      lastX = xpos;
-      lastY = ypos;
-      firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
-
-    auto engine = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
-    if (!engine || !engine->camera)
-      return;
-
-    engine->camera->ProcessMouseMovement(xoffset, yoffset);
-  });
-
+  glfwSetCursorPosCallback(
+      window, [](GLFWwindow *win, double xpos, double ypos) {
+        static float lastX = SCR_WIDTH / 2.0f;
+        static float lastY = SCR_HEIGHT / 2.0f;
+        static bool firstMouse = true;
+        if (firstMouse) {
+          lastX = xpos;
+          lastY = ypos;
+          firstMouse = false;
+        }
+        float xoff = xpos - lastX;
+        float yoff = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
+        auto *e = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(win));
+        if (e && e->camera)
+          e->camera->ProcessMouseMovement(xoff, yoff);
+      });
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   glEnable(GL_DEPTH_TEST);
-
-  srand(time(NULL));
   world.init();
-
   running = true;
   return true;
 }
 
-void LightSystem(World &world, Shader &shader) {
-  for (auto &[id, light] : world.lightSources) {
-    shader.setVec3("lightDir", light.direction);
-    shader.setVec3("lightColor", light.color);
-  }
-}
+// ─── Mesh helpers ───────────────────────────────────────────────────────────
 
-void spawnCreatures(World &world, int creatureCount,
-                    std::vector<Vertex> vertices,
-                    std::vector<unsigned int> indices) {
-  for (int x = 0; x < creatureCount; x++) {
-
-    int torso = world.createEntity();
-    {
-      float x = (rand() % 100) - 50.0f;
-      float z = (rand() % 100) - 50.0f;
-      float y = world.terrain->terrainHeight(x, z);
-      TransformComponent t;
-      VelocityComponent v;
-      MeshComponent m;
-      m.mesh = std::make_shared<Mesh>(vertices, indices);
-      t.transform.position = {x, y, z};
-      t.transform.scale = {1.0f, 1.0f, 1.0f};
-      v.velocity = {0.0f, 0.0f, 0.0f};
-      world.addTransformComponent(torso, t);
-      world.addVelocityComponent(torso, v);
-      world.addMeshComponent(torso, m);
-      world.addLifeComponent(torso,
-                             LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
-    }
-
-    world.addMotorComponent(
-        torso, MotorComponent{glm::vec3(15.0f, 0.0f, 15.0f), 5.0f});
-    BrainComponent b;
-    b.brain.init();
-    world.addBrainComponent(torso, b);
-  }
-}
-
-void Engine::run() {
-  if (!running)
-    return;
-
-  std::vector<Vertex> vertices = {
-      // Front (+Z)
+static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
+  std::vector<Vertex> verts = {
+      // Front  (+Z)
       {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0, 0, 1}},
       {{0.5f, -0.5f, 0.5f}, {0, 1, 0}, {0, 0, 1}},
       {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0, 0, 1}},
       {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 0, 1}},
-      // Back (-Z)
+      // Back   (-Z)
       {{-0.5f, 0.5f, -0.5f}, {1, 0, 1}, {0, 0, -1}},
       {{-0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0, 0, -1}},
       {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, 0, -1}},
       {{0.5f, 0.5f, -0.5f}, {0, 0, 0}, {0, 0, -1}},
-      // Right (+X)
+      // Right  (+X)
       {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
       {{0.5f, -0.5f, -0.5f}, {0, 1, 0}, {1, 0, 0}},
       {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1, 0, 0}},
       {{0.5f, 0.5f, 0.5f}, {1, 1, 0}, {1, 0, 0}},
-      // Left (-X)
+      // Left   (-X)
       {{-0.5f, 0.5f, 0.5f}, {1, 0, 1}, {-1, 0, 0}},
       {{-0.5f, -0.5f, 0.5f}, {0, 1, 1}, {-1, 0, 0}},
       {{-0.5f, -0.5f, -0.5f}, {1, 1, 1}, {-1, 0, 0}},
       {{-0.5f, 0.5f, -0.5f}, {0, 0, 0}, {-1, 0, 0}},
-      // Top (+Y)
+      // Top    (+Y)
       {{-0.5f, 0.5f, -0.5f}, {1, 0, 0}, {0, 1, 0}},
       {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
       {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0, 1, 0}},
@@ -215,318 +154,159 @@ void Engine::run() {
       {{-0.5f, -0.5f, -0.5f}, {0, 0, 0}, {0, -1, 0}},
   };
 
-  std::vector<Vertex> foodVertices = vertices; // copy the cube shape
-  for (auto &v : foodVertices) {
-    v.Color = {1.0f, 0.8f, 0.0f}; // golden yellow
-  }
-
-  std::vector<unsigned int> indices;
+  std::vector<unsigned int> idx;
   for (unsigned int f = 0; f < 6; f++) {
     unsigned int b = f * 4;
-    indices.insert(indices.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
+    idx.insert(idx.end(), {b, b + 1, b + 2, b, b + 2, b + 3});
   }
+  return {verts, idx};
+}
 
-  world.creatureVertices = vertices;
-  world.creatureIndices = indices;
+// ─── Spawn helpers ──────────────────────────────────────────────────────────
 
-  int light = world.createEntity();
-  world.addLightComponent(light, LightComponent{
-                                     glm::vec3(0.0f, -1.0f, 0.2f), // direction
-                                     glm::vec3(1.0f, 1.0f, 1.0f)   // color
-                                 });
+static void spawnCreature(World &world, const std::vector<Vertex> &verts,
+                          const std::vector<unsigned int> &idx, Brain brain) {
+  float x = randRange(-50.0f, 50.0f);
+  float z = randRange(-50.0f, 50.0f);
+  float y = world.terrain->terrainHeight(x, z);
 
-  for (int i = 0; i < 20; i++) {
-    float x = (rand() % 100) - 50.0f;
-    float z = (rand() % 100) - 50.0f;
-    float y = world.terrain->terrainHeight(x, z);
+  int id = world.createEntity();
+  TransformComponent t;
+  t.transform.position = {x, y, z};
+  t.transform.scale = {1, 1, 1};
+  VelocityComponent v;
+  v.velocity = {0, 0, 0};
+  MeshComponent m;
+  m.mesh = std::make_shared<Mesh>(verts, idx);
 
-    int food = world.createEntity();
-    TransformComponent t;
-    t.transform.position = {x, y + 0.3f, z};
-    t.transform.scale = {0.3f, 0.3f, 0.3f};
+  world.addTransformComponent(id, t);
+  world.addVelocityComponent(id, v);
+  world.addMeshComponent(id, m);
+  world.addLifeComponent(id, LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
+  world.addMotorComponent(id, MotorComponent{glm::vec3(0.0f), 5.0f});
 
-    MeshComponent m;
-    m.mesh = std::make_shared<Mesh>(foodVertices, indices);
+  BrainComponent b;
+  b.brain = brain;
+  world.addBrainComponent(id, b);
+}
 
-    world.addTransformComponent(food, t);
-    world.addMeshComponent(food, m);
-    world.addFoodComponent(food, FoodComponent{1.0f});
-  }
+static void spawnFood(World &world, const std::vector<Vertex> &verts,
+                      const std::vector<unsigned int> &idx) {
+  float x = randRange(-50.0f, 50.0f);
+  float z = randRange(-50.0f, 50.0f);
+  float y = world.terrain->terrainHeight(x, z);
 
-  // for (int i = 0; i < 10; i++) {
-  //   int entity = world.createEntity();
-  //   TransformComponent t;
-  //   VelocityComponent v;
-  //   MeshComponent m;
-  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
-  //   t.transform.position = {(float)i, 0.0f, 0.0f};
-  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
-  //   v.velocity = {0.0f, 0.0f, 0.0f};
-  //
-  //   world.addMeshComponent(entity, m);
-  //   world.addTransformComponent(entity, t);
-  //   world.addVelocityComponent(entity, v);
-  // }
+  int id = world.createEntity();
+  TransformComponent t;
+  t.transform.position = {x, y + 0.3f, z};
+  t.transform.scale = {0.3f, 0.3f, 0.3f};
+  MeshComponent m;
+  m.mesh = std::make_shared<Mesh>(verts, idx);
+  world.addTransformComponent(id, t);
+  world.addMeshComponent(id, m);
+  world.addFoodComponent(id, FoodComponent{1.0f});
+}
 
-  spawnCreatures(world, 10, vertices, indices);
+// ─── Systems ────────────────────────────────────────────────────────────────
 
-  // TODO: Better Segment Code
-
-  // Segment 2 — attached to right of torso
-  // int seg2 = world.createEntity();
-  // {
-  //   TransformComponent t;
-  //   MeshComponent m;
-  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
-  //   t.transform.position = {0.0f, 0.0f, 0.0f};
-  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
-  //   world.addTransformComponent(seg2, t);
-  //   world.addMeshComponent(seg2, m);
-  //   world.addJointComponent(seg2, JointComponent{torso, {1.5f, 0.0f, 0.0f}});
-  // }
-
-  // Segment 3 — attached to right of seg2
-  // int seg3 = world.createEntity();
-  // {
-  //   TransformComponent t;
-  //   MeshComponent m;
-  //   m.mesh = std::make_shared<Mesh>(vertices, indices);
-  //   t.transform.position = {0.0f, 0.0f, 0.0f};
-  //   t.transform.scale = {1.0f, 1.0f, 1.0f};
-  //   world.addTransformComponent(seg3, t);
-  //   world.addMeshComponent(seg3, m);
-  //   world.addJointComponent(seg3, JointComponent{seg2, {1.5f, 0.0f, 0.0f}});
-  // }
-
-  while (!glfwWindowShouldClose(window)) {
-    float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    processInput();
-    // update(deltaTime);
-    float fixedDt = 0.016f; // 60fps equivalent
-    int simSteps = 10;
-    for (int i = 0; i < simSteps; i++) {
-      update(fixedDt);
-    }
-
-    glm::mat4 view = camera->GetViewMatrix();
-    glm::mat4 projection =
-        glm::perspective(glm::radians(camera->Zoom),
-                         (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-
-    shader->use();
-    shader->setMat4("view", view);
-    shader->setMat4("projection", projection);
-    // // shader->setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
-    // shader->setVec3("lightDir", glm::vec3(0.0f, -1.0f, 0.2f));
-    // shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-
-    LightSystem(world, *shader);
-
-    shader->setVec3("viewPos", camera->Position);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    shader->setMat4("model", world.terrain->modelMat);
-    shader->setMat3("normalMatrix", world.terrain->normalMat);
-    world.terrain->Draw(*shader);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    for (auto &[id, trans] : world.transforms) {
-      glm::mat4 model = trans.transform.getModelMatrix();
-      shader->setMat4("model", model);
-      shader->setMat3("normalMatrix", trans.normalMatrix);
-
-      if (world.meshes.count(id)) {
-        world.meshes.at(id).mesh->Draw(*shader);
-      }
-    }
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+static void LightSystem(World &world, Shader &shader) {
+  for (auto &[id, light] : world.lightSources) {
+    shader.setVec3("lightDir", light.direction);
+    shader.setVec3("lightColor", light.color);
   }
 }
 
-// Don't need this, motors are now handled by the brain System
-void MotorSystem(World &world, float dt) {
-  for (auto &[id, motor] : world.motors) {
-    if (!world.transforms.count(id) || !world.velocities.count(id))
+static void JointSystem(World &world) {
+  for (auto &[id, joint] : world.joints) {
+    if (!world.transforms.count(id) || !world.transforms.count(joint.parentID))
+      continue;
+    auto &parentTrans = world.transforms.at(joint.parentID).transform;
+    auto &childTrans = world.transforms.at(id).transform;
+    glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), parentTrans.rotation.y,
+                                   glm::vec3(0, 1, 0));
+    childTrans.position =
+        parentTrans.position +
+        glm::vec3(rotMat * glm::vec4(joint.localOffset, 0.0f));
+  }
+}
+
+static void BrainSystem(World &world, float dt) {
+  for (auto &[id, sentient] : world.sentients) {
+    if (!world.lives.count(id) || !world.motors.count(id) ||
+        !world.transforms.count(id) || !world.velocities.count(id))
       continue;
 
-    float nearestDist = FLT_MAX;
+    // Find nearest food
+    auto &motor = world.motors.at(id);
+    glm::vec3 agentPos = world.transforms.at(id).transform.position;
     glm::vec3 nearestFood = motor.target;
-
+    float nearestDist = FLT_MAX;
     for (auto &[foodID, food] : world.foods) {
-
-      glm::vec3 agentPos = world.transforms.at(id).transform.position;
       glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
       float dist = glm::length(agentPos - foodPos);
-      if (nearestDist > dist) {
+      if (dist < nearestDist) {
         nearestDist = dist;
         nearestFood = foodPos;
       }
     }
-
     motor.target = nearestFood;
 
-    glm::vec3 diff = motor.target - world.transforms.at(id).transform.position;
-    if (glm::length(diff) < 0.01f)
+    glm::vec3 diff = nearestFood - agentPos;
+    glm::vec2 dir2D = glm::normalize(glm::vec2(diff.x, diff.z));
+    float distToFood = glm::length(diff);
+
+    auto &life = world.lives.at(id);
+    input in = {life.health, life.hunger, dir2D, distToFood};
+    output out = sentient.brain.forward(in);
+
+    glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
+    world.velocities.at(id).velocity += force * motor.strength * dt;
+  }
+}
+
+static void MovementSystem(World &world, float dt) {
+  for (auto &[id, vel] : world.velocities) {
+    if (!world.transforms.count(id))
       continue;
-    glm::vec3 direction = glm::normalize(diff);
-    world.velocities.at(id).velocity += direction * motor.strength * dt;
-  }
-}
+    auto &trans = world.transforms.at(id);
 
-// void MotorSystem(World &world, float dt) {
-//   for (auto &[id, motor] : world.motors) {
-//     if (world.transforms.count(id) && world.velocities.count(id)) {
-//       glm::vec3 diff =
-//           motor.target - world.transforms.at(id).transform.position;
-//       if (glm::length(diff) < 0.01f)
-//         continue;
-//       glm::vec3 direction = glm::normalize(diff);
-//       world.velocities.at(id).velocity += direction * motor.strength * dt;
-//     }
-//   }
-// }
+    vel.velocity.y += -9.8f * dt;
 
-void CollisionSystem(World &world) {
-  for (auto &[idA, transA] : world.transforms) {
-    for (auto &[idB, transB] : world.transforms) {
-      if (idA >= idB)
-        continue;
-      bool bothHaveVelocity =
-          world.velocities.count(idA) && world.velocities.count(idB);
-      glm::vec3 aMin =
-          transA.transform.position + glm::vec3(-0.5f, -0.5f, -0.5f);
-      glm::vec3 aMax = transA.transform.position + glm::vec3(0.5f, 0.5f, 0.5f);
+    const float maxSpeed = 2.0f;
+    vel.velocity.x = glm::clamp(vel.velocity.x, -maxSpeed, maxSpeed);
+    vel.velocity.z = glm::clamp(vel.velocity.z, -maxSpeed, maxSpeed);
+    vel.velocity.x *= 0.95f;
+    vel.velocity.z *= 0.95f;
 
-      glm::vec3 bMin =
-          transB.transform.position + glm::vec3(-0.5f, -0.5f, -0.5f);
-      glm::vec3 bMax = transB.transform.position + glm::vec3(0.5f, 0.5f, 0.5f);
+    trans.transform.position += vel.velocity * dt;
 
-      bool overlaps = aMin.x < bMax.x && bMin.x < aMax.x && aMin.y < bMax.y &&
-                      bMin.y < aMax.y && aMin.z < bMax.z && bMin.z < aMax.z;
+    trans.transform.position.x =
+        glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
+                   world.terrain->bounds.y);
+    trans.transform.position.z =
+        glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
+                   world.terrain->bounds.w);
 
-      float overlapX = std::min(aMax.x, bMax.x) - std::max(aMin.x, bMin.x);
-      float overlapY = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
-      float overlapZ = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
-
-      if (overlaps) {
-
-        if (overlapX < overlapY && overlapX < overlapZ) {
-          float pushX = overlapX * 0.5f;
-          if (transA.transform.position.x < transB.transform.position.x) {
-            transA.transform.position.x -= pushX;
-            transB.transform.position.x += pushX;
-          } else {
-            transA.transform.position.x += pushX;
-            transB.transform.position.x -= pushX;
-          }
-          if (bothHaveVelocity) {
-            auto &velA = world.velocities.at(idA);
-            auto &velB = world.velocities.at(idB);
-            std::swap(velA.velocity.x, velB.velocity.x);
-          }
-        } else if (overlapY < overlapZ) {
-          float pushY = overlapY * 0.5f;
-          if (transA.transform.position.y < transB.transform.position.y) {
-            transA.transform.position.y -= pushY;
-            transB.transform.position.y += pushY;
-          } else {
-            transA.transform.position.y += pushY;
-            transB.transform.position.y -= pushY;
-          }
-
-          if (bothHaveVelocity) {
-            auto &velA = world.velocities.at(idA);
-            auto &velB = world.velocities.at(idB);
-            std::swap(velA.velocity.y, velB.velocity.y);
-          }
-        } else {
-          float pushZ = overlapZ * 0.5f;
-          if (transA.transform.position.z < transB.transform.position.z) {
-            transA.transform.position.z -= pushZ;
-            transB.transform.position.z += pushZ;
-          } else {
-            transA.transform.position.z += pushZ;
-            transB.transform.position.z -= pushZ;
-          }
-          if (bothHaveVelocity) {
-            auto &velA = world.velocities.at(idA);
-            auto &velB = world.velocities.at(idB);
-            std::swap(velA.velocity.z, velB.velocity.z);
-          }
-        }
-      }
+    float groundY = world.terrain->terrainHeight(trans.transform.position.x,
+                                                 trans.transform.position.z);
+    if (trans.transform.position.y < groundY) {
+      vel.velocity.y = 0.0f;
+      trans.transform.position.y = groundY;
     }
-  }
-};
 
-void LifeSystem(World &world, float dt) {
-  std::vector<int> dead;
-  for (auto &[id, life] : world.lives) {
-    // life.hunger += 5.0f * dt;
-    life.hunger += 0.5f * dt; // instead of 5.0f
-    life.hunger = glm::clamp(life.hunger, 0.0f, life.maxHunger);
-    // life.health -= (life.hunger / life.maxHunger) * 10.0f * dt;
-    life.health -=
-        (life.hunger / life.maxHunger) * 2.0f * dt; // instead of 10.0f
-    life.reward =
-        (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
-    life.cumulativeReward += life.reward * dt;
-    if (life.health <= 0)
-      dead.push_back(id);
-  }
-  for (int id : dead) {
-    if (world.sentients.count(id)) {
-      auto &sentient = world.sentients.at(id);
-      sentient.brain.backward(sentient.History, 0.1);
+    if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
+      float targetYaw = std::atan2(vel.velocity.x, vel.velocity.z);
+      trans.transform.rotation.y =
+          glm::mix(trans.transform.rotation.y, targetYaw, 0.1f);
     }
-    world.destroyEntity(id);
+
+    trans.normalMatrix = glm::mat3(
+        glm::transpose(glm::inverse(trans.transform.getModelMatrix())));
   }
 }
 
-void ReproductionSystem(World &world) {
-  std::vector<int> toReproduce;
-  for (auto &[id, life] : world.lives) {
-    if (life.mealAmount >= 4 && world.sentients.count(id))
-      toReproduce.push_back(id);
-  }
-
-  for (int id : toReproduce) {
-    Brain childBrain = world.sentients.at(id).brain.mutate(0.1f);
-
-    glm::vec3 parentPos = world.transforms.at(id).transform.position;
-
-    int child = world.createEntity();
-    TransformComponent t;
-    VelocityComponent v;
-    MeshComponent m;
-    m.mesh =
-        std::make_shared<Mesh>(world.creatureVertices, world.creatureIndices);
-    t.transform.position = parentPos;
-    t.transform.scale = {1.0f, 1.0f, 1.0f};
-    v.velocity = {0.0f, 0.0f, 0.0f};
-    world.addTransformComponent(child, t);
-    world.addVelocityComponent(child, v);
-    world.addMeshComponent(child, m);
-    world.addLifeComponent(child, LifeComponent{100.0f, 100.0f, 0.0f, 100.0f});
-    world.addMotorComponent(child, MotorComponent{glm::vec3(0.0f), 5.0f});
-
-    BrainComponent b;
-    b.brain = childBrain;
-    world.addBrainComponent(child, b);
-
-    world.destroyEntity(id);
-  }
-}
-
-void FoodSystem(World &world) {
+static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
+                       const std::vector<unsigned int> &foodIdx) {
   for (auto &[foodID, food] : world.foods) {
     if (!world.transforms.count(foodID))
       continue;
@@ -535,11 +315,12 @@ void FoodSystem(World &world) {
     for (auto &[agentID, life] : world.lives) {
       if (!world.transforms.count(agentID))
         continue;
-      glm::vec3 agentPos = world.transforms.at(agentID).transform.position;
-      float dist = glm::length(agentPos - foodPos);
+      float dist = glm::length(world.transforms.at(agentID).transform.position -
+                               foodPos);
       if (dist < 1.5f) {
-        float x = (rand() % 100) - 50.0f;
-        float z = (rand() % 100) - 50.0f;
+        // Respawn food at a new random location
+        float x = randRange(-50.0f, 50.0f);
+        float z = randRange(-50.0f, 50.0f);
         float y = world.terrain->terrainHeight(x, z);
         world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
         life.hunger = 0.0f;
@@ -550,111 +331,181 @@ void FoodSystem(World &world) {
   }
 }
 
-void BrainSystem(World &world, float dt) {
-  for (auto &[id, sentient] : world.sentients) {
-    if (world.lives.count(id) && world.motors.count(id)) {
-      auto &motor = world.motors.at(id);
+static void LifeSystem(World &world, float dt) {
+  std::vector<int> dead;
+  for (auto &[id, life] : world.lives) {
+    life.hunger = glm::clamp(life.hunger + 0.5f * dt, 0.0f, life.maxHunger);
+    life.health -= (life.hunger / life.maxHunger) * 2.0f * dt;
+    life.reward =
+        (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
+    life.cumulativeReward += life.reward * dt;
+    if (life.health <= 0.0f)
+      dead.push_back(id);
+  }
 
-      float nearestDist = FLT_MAX;
-      glm::vec3 nearestFood = motor.target;
-      glm::vec2 nearestFoodxy = {nearestFood.x, nearestFood.y};
+  for (int id : dead)
+    world.destroyEntity(id); // backward() removed — we use neuroevolution only
+}
 
-      if (!world.transforms.count(id) || !world.velocities.count(id))
+static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
+                               const std::vector<unsigned int> &idx) {
+  std::vector<int> toReproduce;
+  for (auto &[id, life] : world.lives)
+    if (life.mealAmount >= 4 && world.sentients.count(id))
+      toReproduce.push_back(id);
+
+  for (int id : toReproduce) {
+    Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
+    spawnCreature(world, verts, idx, childBrain);
+    world.destroyEntity(id);
+  }
+}
+
+static void CollisionSystem(World &world) {
+  for (auto &[idA, transA] : world.transforms) {
+    for (auto &[idB, transB] : world.transforms) {
+      if (idA >= idB)
         continue;
-      for (auto &[foodID, food] : world.foods) {
-        glm::vec3 agentPos = world.transforms.at(id).transform.position;
-        glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
-        float dist = glm::length(agentPos - foodPos);
-        if (nearestDist > dist) {
-          nearestDist = dist;
-          nearestFood = foodPos;
+
+      glm::vec3 aMin = transA.transform.position - glm::vec3(0.5f);
+      glm::vec3 aMax = transA.transform.position + glm::vec3(0.5f);
+      glm::vec3 bMin = transB.transform.position - glm::vec3(0.5f);
+      glm::vec3 bMax = transB.transform.position + glm::vec3(0.5f);
+
+      if (aMin.x >= bMax.x || bMin.x >= aMax.x || aMin.y >= bMax.y ||
+          bMin.y >= aMax.y || aMin.z >= bMax.z || bMin.z >= aMax.z)
+        continue;
+
+      float ox = std::min(aMax.x, bMax.x) - std::max(aMin.x, bMin.x);
+      float oy = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
+      float oz = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
+
+      bool bothDynamic =
+          world.velocities.count(idA) && world.velocities.count(idB);
+      auto &pA = transA.transform.position;
+      auto &pB = transB.transform.position;
+
+      if (ox < oy && ox < oz) {
+        float half = ox * 0.5f;
+        if (pA.x < pB.x) {
+          pA.x -= half;
+          pB.x += half;
+        } else {
+          pA.x += half;
+          pB.x -= half;
         }
+        if (bothDynamic)
+          std::swap(world.velocities.at(idA).velocity.x,
+                    world.velocities.at(idB).velocity.x);
+      } else if (oy < oz) {
+        float half = oy * 0.5f;
+        if (pA.y < pB.y) {
+          pA.y -= half;
+          pB.y += half;
+        } else {
+          pA.y += half;
+          pB.y -= half;
+        }
+        if (bothDynamic)
+          std::swap(world.velocities.at(idA).velocity.y,
+                    world.velocities.at(idB).velocity.y);
+      } else {
+        float half = oz * 0.5f;
+        if (pA.z < pB.z) {
+          pA.z -= half;
+          pB.z += half;
+        } else {
+          pA.z += half;
+          pB.z -= half;
+        }
+        if (bothDynamic)
+          std::swap(world.velocities.at(idA).velocity.z,
+                    world.velocities.at(idB).velocity.z);
       }
-
-      motor.target = nearestFood;
-      glm::vec3 agentPos = world.transforms.at(id).transform.position;
-      glm::vec3 diff = nearestFood - agentPos;
-      glm::vec2 directionOfFood = glm::normalize(glm::vec2(diff.x, diff.z));
-      float distanceToFood = glm::length(diff);
-
-      auto &lifeComp = world.lives.at(id);
-      input in = {lifeComp.health, lifeComp.hunger, directionOfFood,
-                  distanceToFood};
-
-      output out = sentient.brain.forward(in);
-
-      sentient.History.push_back({in, out, lifeComp.reward});
-      sentient.frameCount++;
-      if (sentient.frameCount % 500 == 0) {
-        sentient.brain.backward(sentient.History, 0.5f);
-        sentient.History.clear();
-      }
-
-      glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
-      world.velocities.at(id).velocity += force * motor.strength * dt;
     }
   }
 }
 
-void MovementSystem(World &world, float dt) {
-  for (auto &[id, vel] : world.velocities) {
-    if (world.transforms.count(id)) {
-      auto &trans = world.transforms.at(id);
-      // vel.velocity.x += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
-      //
-      // vel.velocity.z += ((rand() % 100) / 100.0f - 0.5f) * 0.5f;
+void Engine::run() {
+  if (!running)
+    return;
 
-      // Gravity
-      vel.velocity.y += -9.8f * dt;
+  auto [verts, idx] = makeCube();
 
-      float maxSpeed = 2.0f;
-      vel.velocity.x = glm::clamp(vel.velocity.x, -maxSpeed, maxSpeed);
-      vel.velocity.z = glm::clamp(vel.velocity.z, -maxSpeed, maxSpeed);
+  std::vector<Vertex> foodVerts = verts;
+  for (auto &v : foodVerts)
+    v.Color = {1.0f, 0.8f, 0.0f};
 
-      vel.velocity.x *= 0.95f;
-      vel.velocity.z *= 0.95f;
+  world.creatureVertices = verts;
+  world.creatureIndices = idx;
 
-      trans.transform.position.x += vel.velocity.x * dt;
-      trans.transform.position.z += vel.velocity.z * dt;
+  // Light
+  int light = world.createEntity();
+  world.addLightComponent(light, LightComponent{glm::vec3(0.0f, -1.0f, 0.2f),
+                                                glm::vec3(1.0f, 1.0f, 1.0f)});
 
-      trans.transform.position.x =
-          glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
-                     world.terrain->bounds.y);
-      trans.transform.position.z =
-          glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
-                     world.terrain->bounds.w);
+  // Food
+  for (int i = 0; i < 20; i++)
+    spawnFood(world, foodVerts, idx);
 
-      // trans.transform.position.y = world.terrain->terrainHeight(
-      //     trans.transform.position.x, trans.transform.position.z);
-      trans.transform.position.y += vel.velocity.y * dt;
+  // Creatures
+  for (int i = 0; i < 10; i++) {
+    Brain b;
+    b.init(getRng());
+    spawnCreature(world, verts, idx, b);
+  }
 
-      float groundY = world.terrain->terrainHeight(trans.transform.position.x,
-                                                   trans.transform.position.z);
-      if (trans.transform.position.y < groundY) {
-        vel.velocity.y = 0;
-        trans.transform.position.y = groundY;
-      }
+  while (!glfwWindowShouldClose(window)) {
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
 
-      if (vel.velocity.x != 0.0f || vel.velocity.z != 0.0f) {
-        float targetYaw = atan2(vel.velocity.x, vel.velocity.z);
-        trans.transform.rotation.y =
-            glm::mix(trans.transform.rotation.y, targetYaw, 0.1f);
-      }
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      trans.normalMatrix = glm::mat3(glm::transpose(glm::inverse(
-          trans.transform
-              .getModelMatrix()))); // NOTE: I used normalMatrix for
-                                    // transforms under non-uniform scale
+    processInput();
+
+    constexpr float fixedDt = 0.016f;
+    constexpr int simSteps = 10;
+    for (int i = 0; i < simSteps; i++)
+      update(fixedDt);
+
+    glm::mat4 view = camera->GetViewMatrix();
+    glm::mat4 projection =
+        glm::perspective(glm::radians(camera->Zoom),
+                         (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+    shader->use();
+    shader->setMat4("view", view);
+    shader->setMat4("projection", projection);
+    shader->setVec3("viewPos", camera->Position);
+
+    LightSystem(world, *shader);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    shader->setMat4("model", world.terrain->modelMat);
+    shader->setMat3("normalMatrix", world.terrain->normalMat);
+    world.terrain->Draw(*shader);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    for (auto &[id, trans] : world.transforms) {
+      shader->setMat4("model", trans.transform.getModelMatrix());
+      shader->setMat3("normalMatrix", trans.normalMatrix);
+      if (world.meshes.count(id))
+        world.meshes.at(id).mesh->Draw(*shader);
     }
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
   }
 }
 
 void Engine::update(float dt) {
   BrainSystem(world, dt);
   MovementSystem(world, dt);
-  FoodSystem(world);
+  FoodSystem(world, world.creatureVertices, world.creatureIndices);
   LifeSystem(world, dt);
-  ReproductionSystem(world);
+  ReproductionSystem(world, world.creatureVertices, world.creatureIndices);
   JointSystem(world);
   CollisionSystem(world);
 }
