@@ -19,7 +19,7 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// Helpers
 
 static std::mt19937 &getRng() {
   static std::mt19937 rng(std::random_device{}());
@@ -34,13 +34,11 @@ static float randInt(int lo, int hi) { // inclusive
   return std::uniform_int_distribution<int>(lo, hi)(getRng());
 }
 
-// ─── Callbacks ──────────────────────────────────────────────────────────────
 
 static void framebuffer_size_callback(GLFWwindow *, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-// ─── Engine lifecycle ───────────────────────────────────────────────────────
 
 Engine::Engine() = default;
 Engine::~Engine() = default;
@@ -118,8 +116,6 @@ bool Engine::init() {
   return true;
 }
 
-// ─── Mesh helpers ───────────────────────────────────────────────────────────
-
 static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
   std::vector<Vertex> verts = {
       // Front  (+Z)
@@ -161,8 +157,6 @@ static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
   }
   return {verts, idx};
 }
-
-// ─── Spawn helpers ──────────────────────────────────────────────────────────
 
 static void spawnCreature(World &world, const std::vector<Vertex> &verts,
                           const std::vector<unsigned int> &idx, Brain brain) {
@@ -207,7 +201,7 @@ static void spawnFood(World &world, const std::vector<Vertex> &verts,
   world.addFoodComponent(id, FoodComponent{1.0f});
 }
 
-// ─── Systems ────────────────────────────────────────────────────────────────
+// Systems
 
 static void LightSystem(World &world, Shader &shader) {
   for (auto &[id, light] : world.lightSources) {
