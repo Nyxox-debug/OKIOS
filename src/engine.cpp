@@ -248,7 +248,13 @@ static void BrainSystem(World &world, float dt) {
     float distToFood = glm::length(diff);
 
     auto &life = world.lives.at(id);
-    input in = {life.health, life.hunger, dir2D, distToFood};
+    // input in = {life.health, life.hunger, dir2D, distToFood};
+    input in = {
+        life.health / life.maxHealth,              // 0-1
+        life.hunger / life.maxHunger,              // 0-1
+        dir2D,                                     // already -1 to 1
+        glm::clamp(distToFood / 50.0f, 0.0f, 1.0f) // normalize distance
+    };
     output out = sentient.brain.forward(in);
 
     glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
