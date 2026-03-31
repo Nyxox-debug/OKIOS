@@ -19,6 +19,11 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+constexpr int SIM_STEPS_PER_FRAME = 60;
+constexpr float FIXED_DT = 0.016f;
+constexpr int MIN_POPULATION = 6;
+constexpr int MAX_POPULATION = 40;
+
 // Helpers
 
 static std::mt19937 &getRng() {
@@ -316,7 +321,6 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
       float dist = glm::length(world.transforms.at(agentID).transform.position -
                                foodPos);
       if (dist < 1.5f) {
-        // Respawn food at a new random location
         float x = randRange(-50.0f, 50.0f);
         float z = randRange(-50.0f, 50.0f);
         float y = world.terrain->terrainHeight(x, z);
@@ -332,8 +336,10 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
 static void LifeSystem(World &world, float dt) {
   std::vector<int> dead;
   for (auto &[id, life] : world.lives) {
-    life.hunger = glm::clamp(life.hunger + 0.5f * dt, 0.0f, life.maxHunger);
-    life.health -= (life.hunger / life.maxHunger) * 2.0f * dt;
+    // life.hunger = glm::clamp(life.hunger + 0.01f * dt, 0.0f, life.maxHunger);
+    // life.health -= (life.hunger / life.maxHunger) * 2.0f * dt;
+    life.hunger = glm::clamp(life.hunger + 0.004f * dt, 0.0f, life.maxHunger);
+    life.health -= (life.hunger / life.maxHunger) * 1.0f * dt; // was 2.0f
     life.reward =
         (life.health / life.maxHealth) - (life.hunger / life.maxHunger);
     life.cumulativeReward += life.reward * dt;
@@ -345,17 +351,39 @@ static void LifeSystem(World &world, float dt) {
     world.destroyEntity(id); // backward() removed — we use neuroevolution only
 }
 
+// static void ReproductionSystem(World &world, const std::vector<Vertex>
+// &verts,
+//                                const std::vector<unsigned int> &idx) {
+//   std::vector<int> toReproduce;
+//   for (auto &[id, life] : world.lives)
+//     if (life.mealAmount >= 4 && world.sentients.count(id))
+//       toReproduce.push_back(id);
+//
+//   for (int id : toReproduce) {
+//     Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
+//     spawnCreature(world, verts, idx, childBrain);
+//     world.destroyEntity(id);
+//   }
+// }
+
 static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
                                const std::vector<unsigned int> &idx) {
+  // Cap population to avoid explosion
+  if ((int)world.sentients.size() >= MAX_POPULATION)
+    return;
+
   std::vector<int> toReproduce;
   for (auto &[id, life] : world.lives)
-    if (life.mealAmount >= 4 && world.sentients.count(id))
+    if (life.mealAmount >= 2 && world.sentients.count(id))
       toReproduce.push_back(id);
 
   for (int id : toReproduce) {
+    if ((int)world.sentients.size() >= MAX_POPULATION)
+      break;
     Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
     spawnCreature(world, verts, idx, childBrain);
-    world.destroyEntity(id);
+    // Reset parent's meal count instead of killing it — elitism
+    world.lives.at(id).mealAmount = 0;
   }
 }
 
@@ -465,8 +493,24 @@ void Engine::run() {
 
     constexpr float fixedDt = 0.016f;
     constexpr int simSteps = 10;
-    for (int i = 0; i < simSteps; i++)
-      update(fixedDt);
+    for (int i = 0; i < SIM_STEPS_PER_FRAME; i++)
+      update(FIXED_DT);
+
+    // After update — population floor rescue
+    int creatureCount = (int)world.sentients.size();
+    if (creatureCount < MIN_POPULATION) {
+      // Clone best surviving brain, or fresh if none
+      Brain seedBrain;
+      if (!world.sentients.empty())
+        seedBrain =
+            world.sentients.begin()->second.brain.mutate(0.05f, getRng());
+      else
+        seedBrain.init(getRng());
+
+      int needed = MIN_POPULATION - creatureCount;
+      for (int i = 0; i < needed; i++)
+        spawnCreature(world, verts, idx, seedBrain.mutate(0.1f, getRng()));
+    }
 
     glm::mat4 view = camera->GetViewMatrix();
     glm::mat4 projection =
