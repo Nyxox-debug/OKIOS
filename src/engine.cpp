@@ -121,32 +121,26 @@ bool Engine::init() {
 
 static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
   std::vector<Vertex> verts = {
-      // Front  (+Z)
       {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0, 0, 1}},
       {{0.5f, -0.5f, 0.5f}, {0, 1, 0}, {0, 0, 1}},
       {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0, 0, 1}},
       {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 0, 1}},
-      // Back   (-Z)
       {{-0.5f, 0.5f, -0.5f}, {1, 0, 1}, {0, 0, -1}},
       {{-0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0, 0, -1}},
       {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, 0, -1}},
       {{0.5f, 0.5f, -0.5f}, {0, 0, 0}, {0, 0, -1}},
-      // Right  (+X)
       {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
       {{0.5f, -0.5f, -0.5f}, {0, 1, 0}, {1, 0, 0}},
       {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1, 0, 0}},
       {{0.5f, 0.5f, 0.5f}, {1, 1, 0}, {1, 0, 0}},
-      // Left   (-X)
       {{-0.5f, 0.5f, 0.5f}, {1, 0, 1}, {-1, 0, 0}},
       {{-0.5f, -0.5f, 0.5f}, {0, 1, 1}, {-1, 0, 0}},
       {{-0.5f, -0.5f, -0.5f}, {1, 1, 1}, {-1, 0, 0}},
       {{-0.5f, 0.5f, -0.5f}, {0, 0, 0}, {-1, 0, 0}},
-      // Top    (+Y)
       {{-0.5f, 0.5f, -0.5f}, {1, 0, 0}, {0, 1, 0}},
       {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
       {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0, 1, 0}},
       {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 1, 0}},
-      // Bottom (-Y)
       {{-0.5f, -0.5f, 0.5f}, {1, 0, 1}, {0, -1, 0}},
       {{0.5f, -0.5f, 0.5f}, {0, 1, 1}, {0, -1, 0}},
       {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, -1, 0}},
@@ -191,7 +185,7 @@ static void spawnFood(World &world, const std::vector<Vertex> &verts,
                       const std::vector<unsigned int> &idx) {
   // float x = randRange(-50.0f, 50.0f);
   // float z = randRange(-50.0f, 50.0f);
-  float x = randRange(-35.0f, 35.0f); // was -50 to 50
+  float x = randRange(-35.0f, 35.0f);
   float z = randRange(-35.0f, 35.0f);
   float y = world.terrain->terrainHeight(x, z);
 
@@ -235,7 +229,7 @@ static void BrainSystem(World &world, float dt) {
         !world.transforms.count(id) || !world.velocities.count(id))
       continue;
 
-    // Find nearest food
+    // Nearest food
     auto &motor = world.motors.at(id);
     glm::vec3 agentPos = world.transforms.at(id).transform.position;
     glm::vec3 nearestFood = motor.target;
@@ -367,7 +361,7 @@ static void LifeSystem(World &world, float dt) {
   }
 
   for (int id : dead)
-    world.destroyEntity(id); // backward() removed — we use neuroevolution only
+    world.destroyEntity(id);
 }
 
 // static void ReproductionSystem(World &world, const std::vector<Vertex>
