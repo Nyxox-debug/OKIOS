@@ -26,12 +26,19 @@ void Terrain::generate(int gridSize, float cellSize) {
       float sine = stb_perlin_noise3(x * 0.1f, 0, z * 0.1f, 0, 0, 0);
       heights.push_back(sine);
       v.Position = {x * cellSize, sine, z * cellSize};
+      // if (sine > 0.3f)
+      //   v.Color = {0.5f, 0.5f, 0.5f}; // rocky high ground
+      // else if (sine > 0.0f)
+      //   v.Color = {0.2f, 0.5f, 0.2f}; // normal grass
+      // else
+      //   v.Color = {0.1f, 0.3f, 0.6f}; // low/water areas
+
       if (sine > 0.3f)
-        v.Color = {0.5f, 0.5f, 0.5f}; // rocky high ground
+        v.Color = {0.7f, 0.7f, 0.7f}; // light gray (high ground)
       else if (sine > 0.0f)
-        v.Color = {0.2f, 0.5f, 0.2f}; // normal grass
+        v.Color = {0.4f, 0.4f, 0.4f}; // mid gray (ground)
       else
-        v.Color = {0.1f, 0.3f, 0.6f}; // low/water areas
+        v.Color = {0.25f, 0.25f, 0.25f}; // dark gray (low areas)
       verts.push_back(v);
     }
   }
