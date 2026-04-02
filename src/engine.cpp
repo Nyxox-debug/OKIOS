@@ -121,30 +121,41 @@ bool Engine::init() {
 
 static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
   std::vector<Vertex> verts = {
-      {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0, 0, 1}},
-      {{0.5f, -0.5f, 0.5f}, {0, 1, 0}, {0, 0, 1}},
-      {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0, 0, 1}},
-      {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 0, 1}},
-      {{-0.5f, 0.5f, -0.5f}, {1, 0, 1}, {0, 0, -1}},
-      {{-0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0, 0, -1}},
-      {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, 0, -1}},
-      {{0.5f, 0.5f, -0.5f}, {0, 0, 0}, {0, 0, -1}},
-      {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
-      {{0.5f, -0.5f, -0.5f}, {0, 1, 0}, {1, 0, 0}},
-      {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1, 0, 0}},
-      {{0.5f, 0.5f, 0.5f}, {1, 1, 0}, {1, 0, 0}},
-      {{-0.5f, 0.5f, 0.5f}, {1, 0, 1}, {-1, 0, 0}},
-      {{-0.5f, -0.5f, 0.5f}, {0, 1, 1}, {-1, 0, 0}},
-      {{-0.5f, -0.5f, -0.5f}, {1, 1, 1}, {-1, 0, 0}},
-      {{-0.5f, 0.5f, -0.5f}, {0, 0, 0}, {-1, 0, 0}},
-      {{-0.5f, 0.5f, -0.5f}, {1, 0, 0}, {0, 1, 0}},
-      {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
-      {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0, 1, 0}},
-      {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 1, 0}},
-      {{-0.5f, -0.5f, 0.5f}, {1, 0, 1}, {0, -1, 0}},
-      {{0.5f, -0.5f, 0.5f}, {0, 1, 1}, {0, -1, 0}},
-      {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, -1, 0}},
-      {{-0.5f, -0.5f, -0.5f}, {0, 0, 0}, {0, -1, 0}},
+      // Front (slightly brighter)
+      {{0.5f, 0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
+      {{0.5f, -0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
+      {{-0.5f, -0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
+      {{-0.5f, 0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
+
+      // Back (darker)
+      {{-0.5f, 0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
+      {{-0.5f, -0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
+      {{0.5f, -0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
+      {{0.5f, 0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
+
+      // Right
+      {{0.5f, 0.5f, -0.5f}, {0.2f, 0.2f, 0.2f}, {1, 0, 0}},
+      {{0.5f, -0.5f, -0.5f}, {0.2f, 0.2f, 0.2f}, {1, 0, 0}},
+      {{0.5f, -0.5f, 0.5f}, {0.2f, 0.2f, 0.2f}, {1, 0, 0}},
+      {{0.5f, 0.5f, 0.5f}, {0.2f, 0.2f, 0.2f}, {1, 0, 0}},
+
+      // Left
+      {{-0.5f, 0.5f, 0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
+      {{-0.5f, -0.5f, 0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
+      {{-0.5f, -0.5f, -0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
+      {{-0.5f, 0.5f, -0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
+
+      // Top (light catches here)
+      {{-0.5f, 0.5f, -0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
+      {{0.5f, 0.5f, -0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
+      {{0.5f, 0.5f, 0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
+      {{-0.5f, 0.5f, 0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
+
+      // Bottom (darkest)
+      {{-0.5f, -0.5f, 0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
+      {{0.5f, -0.5f, 0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
+      {{0.5f, -0.5f, -0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
+      {{-0.5f, -0.5f, -0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
   };
 
   std::vector<unsigned int> idx;
@@ -179,12 +190,28 @@ static void spawnCreature(World &world, const std::vector<Vertex> &verts,
   BrainComponent b;
   b.brain = brain;
   world.addBrainComponent(id, b);
+
+  // Tail
+  std::vector<Vertex> tailVerts = verts;
+  for (auto &tv : tailVerts)
+    tv.Color = {1.0f, 0.0f, 0.0f};
+
+  int tailID = world.createEntity();
+  TransformComponent tt;
+  tt.transform.position = {x, y, z}; // JointSystem will correct this each frame
+  tt.transform.scale = {0.35f, 0.35f, 0.35f};
+  MeshComponent tm;
+  tm.mesh = std::make_shared<Mesh>(tailVerts, idx);
+
+  world.addTransformComponent(tailID, tt);
+  world.addMeshComponent(tailID, tm);
+  world.addJointComponent(tailID,
+                          JointComponent{id, glm::vec3(0.0f, 0.3f, -1.2f)});
+  world.addTailComponent(tailID, id);
 }
 
 static void spawnFood(World &world, const std::vector<Vertex> &verts,
                       const std::vector<unsigned int> &idx) {
-  // float x = randRange(-50.0f, 50.0f);
-  // float z = randRange(-50.0f, 50.0f);
   float x = randRange(-35.0f, 35.0f);
   float z = randRange(-35.0f, 35.0f);
   float y = world.terrain->terrainHeight(x, z);
@@ -249,13 +276,8 @@ static void BrainSystem(World &world, float dt) {
     float distToFood = glm::length(diff);
 
     auto &life = world.lives.at(id);
-    // input in = {life.health, life.hunger, dir2D, distToFood};
-    input in = {
-        life.health / life.maxHealth,              // 0-1
-        life.hunger / life.maxHunger,              // 0-1
-        dir2D,                                     // already -1 to 1
-        glm::clamp(distToFood / 50.0f, 0.0f, 1.0f) // normalize distance
-    };
+    input in = {life.health / life.maxHealth, life.hunger / life.maxHunger,
+                dir2D, glm::clamp(distToFood / 50.0f, 0.0f, 1.0f)};
     output out = sentient.brain.forward(in);
 
     glm::vec3 force = glm::vec3(out.direction.x, 0.0f, out.direction.y);
@@ -278,13 +300,6 @@ static void MovementSystem(World &world, float dt) {
     vel.velocity.z *= 0.95f;
 
     trans.transform.position += vel.velocity * dt;
-
-    // trans.transform.position.x =
-    //     glm::clamp(trans.transform.position.x, world.terrain->bounds.x,
-    //                world.terrain->bounds.y);
-    // trans.transform.position.z =
-    //     glm::clamp(trans.transform.position.z, world.terrain->bounds.z,
-    //                world.terrain->bounds.w);
 
     if (trans.transform.position.x <= world.terrain->bounds.x ||
         trans.transform.position.x >= world.terrain->bounds.y) {
@@ -330,6 +345,8 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
     for (auto &[agentID, life] : world.lives) {
       if (!world.transforms.count(agentID))
         continue;
+      if (world.tails.count(agentID))
+        continue;
       float dist = glm::length(world.transforms.at(agentID).transform.position -
                                foodPos);
       if (dist < 1.5f) {
@@ -348,9 +365,6 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
 static void LifeSystem(World &world, float dt) {
   std::vector<int> dead;
   for (auto &[id, life] : world.lives) {
-    // life.hunger = glm::clamp(life.hunger + 0.004f * dt, 0.0f,
-    // life.maxHunger); life.health -= (life.hunger / life.maxHunger) * 1.0f *
-    // dt; // was 2.0f
     life.hunger = glm::clamp(life.hunger + 0.003f * dt, 0.0f, life.maxHunger);
     life.health -= (life.hunger / life.maxHunger) * 0.8f * dt;
     life.reward =
@@ -364,24 +378,8 @@ static void LifeSystem(World &world, float dt) {
     world.destroyEntity(id);
 }
 
-// static void ReproductionSystem(World &world, const std::vector<Vertex>
-// &verts,
-//                                const std::vector<unsigned int> &idx) {
-//   std::vector<int> toReproduce;
-//   for (auto &[id, life] : world.lives)
-//     if (life.mealAmount >= 4 && world.sentients.count(id))
-//       toReproduce.push_back(id);
-//
-//   for (int id : toReproduce) {
-//     Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
-//     spawnCreature(world, verts, idx, childBrain);
-//     world.destroyEntity(id);
-//   }
-// }
-
 static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
                                const std::vector<unsigned int> &idx) {
-  // Cap population to avoid explosion
   if ((int)world.sentients.size() >= MAX_POPULATION)
     return;
 
@@ -395,15 +393,20 @@ static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
       break;
     Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
     spawnCreature(world, verts, idx, childBrain);
-    // Reset parent's meal count instead of killing it — elitism
     world.lives.at(id).mealAmount = 0;
   }
 }
 
 static void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
+    // Skip tail entities — they have no velocity and shouldn't push things
+    if (world.tails.count(idA))
+      continue;
+
     for (auto &[idB, transB] : world.transforms) {
       if (idA >= idB)
+        continue;
+      if (world.tails.count(idB))
         continue;
 
       glm::vec3 aMin = transA.transform.position - glm::vec3(0.5f);
@@ -484,7 +487,7 @@ void Engine::run() {
                                                 glm::vec3(1.0f, 1.0f, 1.0f)});
 
   // Food
-  for (int i = 0; i < 20; i++)
+  for (int i = 0; i < 30; i++)
     spawnFood(world, foodVerts, idx);
 
   // Creatures
@@ -504,15 +507,12 @@ void Engine::run() {
 
     processInput();
 
-    constexpr float fixedDt = 0.016f;
-    constexpr int simSteps = 10;
     for (int i = 0; i < SIM_STEPS_PER_FRAME; i++)
       update(FIXED_DT);
 
-    // After update — population floor rescue
+    // Population floor rescue
     int creatureCount = (int)world.sentients.size();
     if (creatureCount < MIN_POPULATION) {
-      // Clone best surviving brain, or fresh if none
       Brain seedBrain;
       if (!world.sentients.empty())
         seedBrain =

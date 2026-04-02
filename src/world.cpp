@@ -43,22 +43,40 @@ void World::addBrainComponent(int entityID, BrainComponent brain) {
   sentients[entityID] = brain;
 }
 
+void World::addTailComponent(int tailID, int parentID) {
+  tails[tailID] = parentID;
+}
+
 void World::destroyEntity(int entityID) {
+  // Destroy any tail that belongs to this creature
+  std::vector<int> tailsToDestroy;
+  for (auto &[tailID, parentID] : tails)
+    if (parentID == entityID)
+      tailsToDestroy.push_back(tailID);
+  for (int tailID : tailsToDestroy) {
+    tails.erase(tailID);
+    joints.erase(tailID);
+    transforms.erase(tailID);
+    meshes.erase(tailID);
+  }
+
   velocities.erase(entityID);
   transforms.erase(entityID);
   meshes.erase(entityID);
   lightSources.erase(entityID);
   sentients.erase(entityID);
+  joints.erase(entityID);
+  tails.erase(entityID);
 }
 
 std::optional<TransformComponent> World::getTransformComponent(int entityID) {
   if (transforms.count(entityID))
     return transforms.at(entityID);
   return std::nullopt;
-};
+}
 
 std::optional<VelocityComponent> World::getVelocityComponent(int entityID) {
   if (velocities.count(entityID))
     return velocities.at(entityID);
   return std::nullopt;
-};
+}
