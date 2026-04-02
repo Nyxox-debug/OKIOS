@@ -510,11 +510,11 @@ void Engine::run() {
                                                 glm::vec3(1.0f, 1.0f, 1.0f)});
 
   // Food
-  for (int i = 0; i < 20; i++)
+  for (int i = 0; i < 40; i++)
     spawnFood(world, foodVerts, idx);
 
   // Creatures
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 30; i++) {
     Brain b;
     b.init(getRng());
     spawnCreature(world, verts, idx, b);
