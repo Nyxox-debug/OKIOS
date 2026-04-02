@@ -51,7 +51,7 @@ struct LifeComponent {
   float health, maxHealth, hunger, maxHunger;
   float reward;
   int mealAmount;
-  int cumulativeReward;
+  float cumulativeReward;
 };
 
 class World {
