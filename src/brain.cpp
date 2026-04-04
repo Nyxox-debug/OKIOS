@@ -40,7 +40,6 @@ output Brain::forward(const input &in) const {
   return {glm::vec2(out[0], out[1])};
 }
 
-// Moved from using backward propagation to neuroevolution
 Brain Brain::mutate(float mutationRate, std::mt19937 &rng) const {
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
   Brain child = *this;

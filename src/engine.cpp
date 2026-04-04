@@ -158,32 +158,6 @@ static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
       {{0.5f, -0.5f, -0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
       {{-0.5f, -0.5f, -0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
   };
-  // std::vector<Vertex> verts = {
-  //     {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0, 0, 1}},
-  //     {{0.5f, -0.5f, 0.5f}, {0, 1, 0}, {0, 0, 1}},
-  //     {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0, 0, 1}},
-  //     {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 0, 1}},
-  //     {{-0.5f, 0.5f, -0.5f}, {1, 0, 1}, {0, 0, -1}},
-  //     {{-0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0, 0, -1}},
-  //     {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, 0, -1}},
-  //     {{0.5f, 0.5f, -0.5f}, {0, 0, 0}, {0, 0, -1}},
-  //     {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1, 0, 0}},
-  //     {{0.5f, -0.5f, -0.5f}, {0, 1, 0}, {1, 0, 0}},
-  //     {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1, 0, 0}},
-  //     {{0.5f, 0.5f, 0.5f}, {1, 1, 0}, {1, 0, 0}},
-  //     {{-0.5f, 0.5f, 0.5f}, {1, 0, 1}, {-1, 0, 0}},
-  //     {{-0.5f, -0.5f, 0.5f}, {0, 1, 1}, {-1, 0, 0}},
-  //     {{-0.5f, -0.5f, -0.5f}, {1, 1, 1}, {-1, 0, 0}},
-  //     {{-0.5f, 0.5f, -0.5f}, {0, 0, 0}, {-1, 0, 0}},
-  //     {{-0.5f, 0.5f, -0.5f}, {1, 0, 0}, {0, 1, 0}},
-  //     {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0, 1, 0}},
-  //     {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0, 1, 0}},
-  //     {{-0.5f, 0.5f, 0.5f}, {1, 1, 0}, {0, 1, 0}},
-  //     {{-0.5f, -0.5f, 0.5f}, {1, 0, 1}, {0, -1, 0}},
-  //     {{0.5f, -0.5f, 0.5f}, {0, 1, 1}, {0, -1, 0}},
-  //     {{0.5f, -0.5f, -0.5f}, {1, 1, 1}, {0, -1, 0}},
-  //     {{-0.5f, -0.5f, -0.5f}, {0, 0, 0}, {0, -1, 0}},
-  // };
 
   std::vector<unsigned int> idx;
   for (unsigned int f = 0; f < 6; f++) {
@@ -225,7 +199,7 @@ static void spawnCreature(World &world, const std::vector<Vertex> &verts,
 
   int tailID = world.createEntity();
   TransformComponent tt;
-  tt.transform.position = {x, y, z}; // JointSystem will correct this each frame
+  tt.transform.position = {x, y, z};
   tt.transform.scale = {0.35f, 0.35f, 0.35f};
   MeshComponent tm;
   tm.mesh = std::make_shared<Mesh>(tailVerts, idx);
@@ -487,8 +461,6 @@ static void CollisionSystem(World &world) {
       auto &pB = transB.transform.position;
 
       if (ox < oy && ox < oz) {
-        // Bug fix: if only one is dynamic, push the full overlap instead of
-        // half
         float pushA = bothDynamic ? ox * 0.5f : (aDynamic ? ox : 0.0f);
         float pushB = bothDynamic ? ox * 0.5f : (bDynamic ? ox : 0.0f);
         if (pA.x < pB.x) {
