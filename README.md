@@ -1,6 +1,8 @@
 # OKIOS
 Greek οἶκος → home / habitat
 
+![Demo](assets/okios.gif)
+
 ## Description
 This project is a reinforcement learning–driven artificial life simulation where a population of identical agents ("creatures") learns to survive and thrive in a shared environment.
 
@@ -26,7 +28,7 @@ At its core, the simulation investigates a fundamental question:
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/Nyxox-debug/OKIOS 
+git clone https://github.com/Nyxox-debug/OKIOS
 cd OKIOS
 ```
 
@@ -53,6 +55,7 @@ cmake --build build
 
 ```
 OKIOS/
+├── assets/       # GIFs and screenshots
 ├── src/          # Source files
 ├── include/      # Header files
 ├── res/
