@@ -66,6 +66,8 @@ void World::destroyEntity(int entityID) {
   lightSources.erase(entityID);
   sentients.erase(entityID);
   joints.erase(entityID);
+  lives.erase(entityID);
+  motors.erase(entityID);
   tails.erase(entityID);
 }
 
