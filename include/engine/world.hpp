@@ -2,6 +2,7 @@
 #include "brain.hpp"
 #include "glm/fwd.hpp"
 #include "mesh.hpp"
+#include "engine/stb_perlin.h"
 #include "terrain.hpp"
 #include "transform.hpp"
 #include <memory>
@@ -12,41 +13,33 @@
 struct VelocityComponent {
   glm::vec3 velocity;
 };
-
 struct BrainComponent {
   Brain brain;
   std::vector<experience> History;
   int frameCount = 0;
 };
-
 struct TransformComponent {
   Transform transform;
   glm::mat3 normalMatrix;
 };
-
 struct MeshComponent {
   std::shared_ptr<Mesh> mesh;
 };
-
 struct LightComponent {
   glm::vec3 direction;
   glm::vec3 color;
 };
-
 struct JointComponent {
   int parentID;
   glm::vec3 localOffset;
 };
-
 struct MotorComponent {
   glm::vec3 target;
   float strength;
 };
-
 struct FoodComponent {
   float nutritionValue;
 };
-
 struct LifeComponent {
   float health, maxHealth, hunger, maxHunger;
   float reward;
@@ -68,11 +61,16 @@ public:
   std::unordered_map<int, FoodComponent> foods;
   std::unordered_map<int, LifeComponent> lives;
   std::unordered_map<int, BrainComponent> sentients;
-  std::unordered_map<int, int> tails; // tailID -> parentID
-
+  std::unordered_map<int, int> tails;
   std::vector<Vertex> creatureVertices;
   std::vector<unsigned int> creatureIndices;
   std::unique_ptr<Terrain> terrain;
+
+  float foodTime = 0.0f;
+
+  float foodDensityAt(float x, float z) const {
+    return stb_perlin_noise3(x * 0.04f, foodTime * 0.08f, z * 0.04f, 0, 0, 0);
+  }
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
   void addTransformComponent(int entityID, TransformComponent trans);

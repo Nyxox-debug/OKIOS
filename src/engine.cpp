@@ -36,7 +36,7 @@ static float randRange(float lo, float hi) {
   return std::uniform_real_distribution<float>(lo, hi)(getRng());
 }
 
-static float randInt(int lo, int hi) { // inclusive
+static float randInt(int lo, int hi) {
   return std::uniform_int_distribution<int>(lo, hi)(getRng());
 }
 
@@ -122,13 +122,13 @@ bool Engine::init() {
 
 static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
   std::vector<Vertex> verts = {
-      // Front (slightly brighter)
+      // Front
       {{0.5f, 0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
       {{0.5f, -0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
       {{-0.5f, -0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
       {{-0.5f, 0.5f, 0.5f}, {0.25f, 0.25f, 0.25f}, {0, 0, 1}},
 
-      // Back (darker)
+      // Back
       {{-0.5f, 0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
       {{-0.5f, -0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
       {{0.5f, -0.5f, -0.5f}, {0.12f, 0.12f, 0.12f}, {0, 0, -1}},
@@ -146,13 +146,13 @@ static std::pair<std::vector<Vertex>, std::vector<unsigned int>> makeCube() {
       {{-0.5f, -0.5f, -0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
       {{-0.5f, 0.5f, -0.5f}, {0.18f, 0.18f, 0.18f}, {-1, 0, 0}},
 
-      // Top (light catches here)
+      // Top
       {{-0.5f, 0.5f, -0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
       {{0.5f, 0.5f, -0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
       {{0.5f, 0.5f, 0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
       {{-0.5f, 0.5f, 0.5f}, {0.3f, 0.3f, 0.3f}, {0, 1, 0}},
 
-      // Bottom (darkest)
+      // Bottom
       {{-0.5f, -0.5f, 0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
       {{0.5f, -0.5f, 0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
       {{0.5f, -0.5f, -0.5f}, {0.1f, 0.1f, 0.1f}, {0, -1, 0}},
@@ -213,8 +213,19 @@ static void spawnCreature(World &world, const std::vector<Vertex> &verts,
 
 static void spawnFood(World &world, const std::vector<Vertex> &verts,
                       const std::vector<unsigned int> &idx) {
-  float x = randRange(-35.0f, 35.0f);
-  float z = randRange(-35.0f, 35.0f);
+
+  float x = 0, z = 0;
+  for (int attempt = 0; attempt < 20; attempt++) {
+    float cx = randRange(-35.0f, 35.0f);
+    float cz = randRange(-35.0f, 35.0f);
+    float density = world.foodDensityAt(cx, cz); // [-1, 1]
+    float prob = (density + 1.0f) * 0.5f;        // remap to [0, 1]
+    x = cx;
+    z = cz;
+    if (randRange(0.0f, 1.0f) < prob)
+      break;
+  }
+
   float y = world.terrain->terrainHeight(x, z);
 
   int id = world.createEntity();
@@ -257,11 +268,9 @@ static void BrainSystem(World &world, float dt) {
         !world.transforms.count(id) || !world.velocities.count(id))
       continue;
 
-    // Nearest food
     auto &motor = world.motors.at(id);
     glm::vec3 agentPos = world.transforms.at(id).transform.position;
-    // BrainSystem — guard against uninitialized target
-    glm::vec3 nearestFood = agentPos; // fallback: no movement impulse
+    glm::vec3 nearestFood = agentPos;
     float nearestDist = FLT_MAX;
     for (auto &[foodID, food] : world.foods) {
       glm::vec3 foodPos = world.transforms.at(foodID).transform.position;
@@ -352,10 +361,21 @@ static void FoodSystem(World &world, const std::vector<Vertex> &foodVerts,
       float dist = glm::length(world.transforms.at(agentID).transform.position -
                                foodPos);
       if (dist < 1.5f) {
-        float x = randRange(-50.0f, 50.0f);
-        float z = randRange(-50.0f, 50.0f);
-        float y = world.terrain->terrainHeight(x, z);
-        world.transforms.at(foodID).transform.position = {x, y + 0.3f, z};
+
+        float rx = 0, rz = 0;
+        for (int attempt = 0; attempt < 20; attempt++) {
+          float cx = randRange(-35.0f, 35.0f);
+          float cz = randRange(-35.0f, 35.0f);
+          float density = world.foodDensityAt(cx, cz); // [-1, 1]
+          float prob = (density + 1.0f) * 0.5f;        // remap to [0, 1]
+          rx = cx;
+          rz = cz;
+          if (randRange(0.0f, 1.0f) < prob)
+            break;
+        }
+        float ry = world.terrain->terrainHeight(rx, rz);
+        world.transforms.at(foodID).transform.position = {rx, ry + 0.3f, rz};
+
         life.hunger = 0.0f;
         life.mealAmount += 1;
         break;
@@ -385,13 +405,11 @@ static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
   if ((int)world.sentients.size() >= MAX_POPULATION)
     return;
 
-  // Collect all creatures with their cumulative reward
   std::vector<std::pair<float, int>> ranked;
   for (auto &[id, life] : world.lives)
     if (world.sentients.count(id))
       ranked.push_back({life.cumulativeReward, id});
 
-  // Sort best-first
   std::sort(ranked.begin(), ranked.end(), std::greater<>());
 
   for (auto &[score, id] : ranked) {
@@ -405,26 +423,6 @@ static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
     life.mealAmount = 0;
   }
 }
-
-// static void ReproductionSystem(World &world, const std::vector<Vertex>
-// &verts,
-//                                const std::vector<unsigned int> &idx) {
-//   if ((int)world.sentients.size() >= MAX_POPULATION)
-//     return;
-//
-//   std::vector<int> toReproduce;
-//   for (auto &[id, life] : world.lives)
-//     if (life.mealAmount >= 4 && world.sentients.count(id))
-//       toReproduce.push_back(id);
-//
-//   for (int id : toReproduce) {
-//     if ((int)world.sentients.size() >= MAX_POPULATION)
-//       break;
-//     Brain childBrain = world.sentients.at(id).brain.mutate(0.1f, getRng());
-//     spawnCreature(world, verts, idx, childBrain);
-//     world.lives.at(id).mealAmount = 0;
-//   }
-// }
 
 static void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
@@ -453,7 +451,6 @@ static void CollisionSystem(World &world) {
       bool bDynamic = world.velocities.count(idB);
       bool bothDynamic = aDynamic && bDynamic;
 
-      // At least one must be dynamic to resolve
       if (!aDynamic && !bDynamic)
         continue;
 
@@ -517,76 +514,6 @@ static void CollisionSystem(World &world) {
     }
   }
 }
-// static void CollisionSystem(World &world) {
-//   for (auto &[idA, transA] : world.transforms) {
-//     // Skip tail entities — they have no velocity and shouldn't push things
-//     if (world.tails.count(idA))
-//       continue;
-//
-//     for (auto &[idB, transB] : world.transforms) {
-//       if (idA >= idB)
-//         continue;
-//       if (world.tails.count(idB))
-//         continue;
-//
-//       glm::vec3 aMin = transA.transform.position - glm::vec3(0.5f);
-//       glm::vec3 aMax = transA.transform.position + glm::vec3(0.5f);
-//       glm::vec3 bMin = transB.transform.position - glm::vec3(0.5f);
-//       glm::vec3 bMax = transB.transform.position + glm::vec3(0.5f);
-//
-//       if (aMin.x >= bMax.x || bMin.x >= aMax.x || aMin.y >= bMax.y ||
-//           bMin.y >= aMax.y || aMin.z >= bMax.z || bMin.z >= aMax.z)
-//         continue;
-//
-//       float ox = std::min(aMax.x, bMax.x) - std::max(aMin.x, bMin.x);
-//       float oy = std::min(aMax.y, bMax.y) - std::max(aMin.y, bMin.y);
-//       float oz = std::min(aMax.z, bMax.z) - std::max(aMin.z, bMin.z);
-//
-//       bool bothDynamic =
-//           world.velocities.count(idA) && world.velocities.count(idB);
-//       auto &pA = transA.transform.position;
-//       auto &pB = transB.transform.position;
-//
-//       if (ox < oy && ox < oz) {
-//         float half = ox * 0.5f;
-//         if (pA.x < pB.x) {
-//           pA.x -= half;
-//           pB.x += half;
-//         } else {
-//           pA.x += half;
-//           pB.x -= half;
-//         }
-//         if (bothDynamic)
-//           std::swap(world.velocities.at(idA).velocity.x,
-//                     world.velocities.at(idB).velocity.x);
-//       } else if (oy < oz) {
-//         float half = oy * 0.5f;
-//         if (pA.y < pB.y) {
-//           pA.y -= half;
-//           pB.y += half;
-//         } else {
-//           pA.y += half;
-//           pB.y -= half;
-//         }
-//         if (bothDynamic)
-//           std::swap(world.velocities.at(idA).velocity.y,
-//                     world.velocities.at(idB).velocity.y);
-//       } else {
-//         float half = oz * 0.5f;
-//         if (pA.z < pB.z) {
-//           pA.z -= half;
-//           pB.z += half;
-//         } else {
-//           pA.z += half;
-//           pB.z -= half;
-//         }
-//         if (bothDynamic)
-//           std::swap(world.velocities.at(idA).velocity.z,
-//                     world.velocities.at(idB).velocity.z);
-//       }
-//     }
-//   }
-// }
 
 void Engine::run() {
   if (!running)
@@ -676,6 +603,7 @@ void Engine::run() {
 }
 
 void Engine::update(float dt) {
+  world.foodTime += dt; 
   BrainSystem(world, dt);
   MovementSystem(world, dt);
   FoodSystem(world, world.creatureVertices, world.creatureIndices);
