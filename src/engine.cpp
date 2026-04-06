@@ -3,6 +3,7 @@
 #include "engine/camera.hpp"
 #include "engine/input.hpp"
 #include "glm/fwd.hpp"
+#include <fstream>
 
 // clang-format off
 #include <algorithm>
@@ -58,6 +59,13 @@ void Engine::processInput() {
     camera->ProcessKeyboard(RIGHT, deltaTime);
   if (Input::IsKeyPressed(window, GLFW_KEY_ESCAPE))
     glfwSetWindowShouldClose(window, true);
+  // Phase 15 bindings
+  if (Input::IsKeyPressed(window, GLFW_KEY_F5))
+    savePopulation("population.bin");
+
+  if (Input::IsKeyPressed(window, GLFW_KEY_F9))
+    loadAndTransfer("population.bin", 200.0f,
+                    0.0f); // shift 200 units in noise space
 }
 
 bool Engine::init() {
@@ -424,6 +432,44 @@ static void ReproductionSystem(World &world, const std::vector<Vertex> &verts,
   }
 }
 
+static void PopulationStatsSystem(World &world) {
+  // Reset
+  for (int i = 0; i < 3; i++)
+    world.biomeStats[i] = {0, 0.0f, 0.0f, i};
+
+  for (auto &[id, life] : world.lives) {
+    if (!world.sentients.count(id) || !world.transforms.count(id))
+      continue;
+
+    glm::vec3 pos = world.transforms.at(id).transform.position;
+    float biomeVal = world.terrain->biomeAt(pos.x, pos.z);
+
+    int biomeID;
+    if (biomeVal < -0.15f)
+      biomeID = 0; // valley
+    else if (biomeVal < 0.25f)
+      biomeID = 1; // midland
+    else
+      biomeID = 2; // highland
+
+    // Tag the creature so LifeSystem and ReproductionSystem can use it later.
+    life.biomeID = biomeID;
+
+    auto &stats = world.biomeStats[biomeID];
+    stats.population++;
+    stats.avgReward += life.cumulativeReward;
+    stats.avgMeals += (float)life.mealAmount;
+  }
+
+  // Finalize averages
+  for (int i = 0; i < 3; i++) {
+    if (world.biomeStats[i].population > 0) {
+      world.biomeStats[i].avgReward /= world.biomeStats[i].population;
+      world.biomeStats[i].avgMeals /= world.biomeStats[i].population;
+    }
+  }
+}
+
 static void CollisionSystem(World &world) {
   for (auto &[idA, transA] : world.transforms) {
     if (world.tails.count(idA))
@@ -603,7 +649,7 @@ void Engine::run() {
 }
 
 void Engine::update(float dt) {
-  world.foodTime += dt; 
+  world.foodTime += dt;
   BrainSystem(world, dt);
   MovementSystem(world, dt);
   FoodSystem(world, world.creatureVertices, world.creatureIndices);
@@ -611,6 +657,7 @@ void Engine::update(float dt) {
   ReproductionSystem(world, world.creatureVertices, world.creatureIndices);
   JointSystem(world);
   CollisionSystem(world);
+  PopulationStatsSystem(world); // <-- add this
 }
 
 void Engine::shutdown() {
@@ -620,4 +667,55 @@ void Engine::shutdown() {
   }
   glfwTerminate();
   running = false;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 14 — PopulationStatsSystem
+// Call once per update. Classifies each creature by biome and accumulates
+// per-biome reward + meal averages. Results written to world.biomeStats[].
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Phase 15 — Save / LoadAndTransfer
+// ---------------------------------------------------------------------------
+void Engine::savePopulation(const std::string &path) {
+  world.savePopulation(path);
+}
+
+void Engine::loadAndTransfer(const std::string &path, float newNoiseOffsetX,
+                             float newNoiseOffsetZ) {
+  // 1. Read brains from disk before clearing anything.
+  std::ifstream f(path, std::ios::binary);
+  if (!f)
+    throw std::runtime_error("loadAndTransfer — cannot open: " + path);
+
+  int count = 0;
+  f.read(reinterpret_cast<char *>(&count), sizeof(int));
+
+  std::vector<Brain> loaded;
+  loaded.reserve(count);
+  for (int i = 0; i < count; i++) {
+    Brain b;
+    f.read(reinterpret_cast<char *>(b.weightsInputHidden.data()),
+           b.weightsInputHidden.size() * sizeof(float));
+    f.read(reinterpret_cast<char *>(b.weightsHiddenOutput.data()),
+           b.weightsHiddenOutput.size() * sizeof(float));
+    f.read(reinterpret_cast<char *>(b.biasHidden.data()),
+           b.biasHidden.size() * sizeof(float));
+    f.read(reinterpret_cast<char *>(b.biasOutput.data()),
+           b.biasOutput.size() * sizeof(float));
+    loaded.push_back(b);
+  }
+
+  // 2. Wipe current population.
+  world.clearCreatures();
+
+  // 3. Swap terrain — same grid/cell size, new noise region.
+  world.terrain = std::make_unique<Terrain>(
+      100, 1.0f, glm::vec2{-50.0f, -50.0f}, newNoiseOffsetX, newNoiseOffsetZ);
+
+  // 4. Respawn creatures with loaded brains at positions on the new terrain.
+  auto [verts, idx] = makeCube(); // reuse existing helper
+  for (auto &brain : loaded)
+    spawnCreature(world, verts, idx, brain);
 }
