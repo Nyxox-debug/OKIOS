@@ -75,7 +75,6 @@ std::optional<VelocityComponent> World::getVelocityComponent(int entityID) {
 }
 
 void World::clearCreatures() {
-  // Collect all creature IDs (sentients only, tails are handled by destroyEntity).
   std::vector<int> toDestroy;
   for (auto &[id, _] : sentients)
     toDestroy.push_back(id);
@@ -92,7 +91,6 @@ void World::savePopulation(const std::string &path) const {
   f.write(reinterpret_cast<const char *>(&count), sizeof(int));
 
   for (auto &[id, bc] : sentients) {
-    // Write brain inline (same layout as Brain::save).
     f.write(reinterpret_cast<const char *>(bc.brain.weightsInputHidden.data()),
             bc.brain.weightsInputHidden.size() * sizeof(float));
     f.write(reinterpret_cast<const char *>(bc.brain.weightsHiddenOutput.data()),
@@ -123,10 +121,6 @@ void World::loadPopulation(const std::string &path) {
     f.read(reinterpret_cast<char *>(b.biasOutput.data()),
            b.biasOutput.size() * sizeof(float));
 
-    // spawnCreature is a free function in engine.cpp — forward declare usage
-    // is handled by Engine::loadAndTransfer which calls this after spawning.
-    // We store the brains temporarily; Engine drives the actual spawn.
-    // This is handled in Engine::loadAndTransfer below.
-    (void)b; // placeholder — see engine.cpp loadAndTransfer
+    (void)b;
   }
 }

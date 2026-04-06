@@ -59,13 +59,12 @@ void Engine::processInput() {
     camera->ProcessKeyboard(RIGHT, deltaTime);
   if (Input::IsKeyPressed(window, GLFW_KEY_ESCAPE))
     glfwSetWindowShouldClose(window, true);
-  // Phase 15 bindings
   if (Input::IsKeyPressed(window, GLFW_KEY_F5))
     savePopulation("population.bin");
 
   if (Input::IsKeyPressed(window, GLFW_KEY_F9))
     loadAndTransfer("population.bin", 200.0f,
-                    0.0f); // shift 200 units in noise space
+                    0.0f);
 }
 
 bool Engine::init() {
@@ -452,7 +451,6 @@ static void PopulationStatsSystem(World &world) {
     else
       biomeID = 2; // highland
 
-    // Tag the creature so LifeSystem and ReproductionSystem can use it later.
     life.biomeID = biomeID;
 
     auto &stats = world.biomeStats[biomeID];
@@ -461,7 +459,6 @@ static void PopulationStatsSystem(World &world) {
     stats.avgMeals += (float)life.mealAmount;
   }
 
-  // Finalize averages
   for (int i = 0; i < 3; i++) {
     if (world.biomeStats[i].population > 0) {
       world.biomeStats[i].avgReward /= world.biomeStats[i].population;
@@ -669,22 +666,12 @@ void Engine::shutdown() {
   running = false;
 }
 
-// ---------------------------------------------------------------------------
-// Phase 14 — PopulationStatsSystem
-// Call once per update. Classifies each creature by biome and accumulates
-// per-biome reward + meal averages. Results written to world.biomeStats[].
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Phase 15 — Save / LoadAndTransfer
-// ---------------------------------------------------------------------------
 void Engine::savePopulation(const std::string &path) {
   world.savePopulation(path);
 }
 
 void Engine::loadAndTransfer(const std::string &path, float newNoiseOffsetX,
                              float newNoiseOffsetZ) {
-  // 1. Read brains from disk before clearing anything.
   std::ifstream f(path, std::ios::binary);
   if (!f)
     throw std::runtime_error("loadAndTransfer — cannot open: " + path);
@@ -707,14 +694,11 @@ void Engine::loadAndTransfer(const std::string &path, float newNoiseOffsetX,
     loaded.push_back(b);
   }
 
-  // 2. Wipe current population.
   world.clearCreatures();
 
-  // 3. Swap terrain — same grid/cell size, new noise region.
   world.terrain = std::make_unique<Terrain>(
       100, 1.0f, glm::vec2{-50.0f, -50.0f}, newNoiseOffsetX, newNoiseOffsetZ);
 
-  // 4. Respawn creatures with loaded brains at positions on the new terrain.
   auto [verts, idx] = makeCube(); // reuse existing helper
   for (auto &brain : loaded)
     spawnCreature(world, verts, idx, brain);

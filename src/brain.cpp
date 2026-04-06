@@ -50,9 +50,6 @@ Brain Brain::mutate(float mutationRate, std::mt19937 &rng) const {
   return child;
 }
 
-// Binary format: just raw floats in order.
-// weightsInputHidden (40) + weightsHiddenOutput (16) + biasHidden (8) + biasOutput (2)
-// Total: 66 floats = 264 bytes.
 void Brain::save(const std::string &path) const {
   std::ofstream f(path, std::ios::binary);
   if (!f)

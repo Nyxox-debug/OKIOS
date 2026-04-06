@@ -54,10 +54,9 @@ struct LifeComponent {
   float reward;
   int mealAmount;
   float cumulativeReward;
-  int biomeID; // 0 = valley, 1 = midland, 2 = highland
+  int biomeID;
 };
 
-// Per-biome stats, updated each frame by PopulationStatsSystem.
 struct BiomeStats {
   int   population    = 0;
   float avgReward     = 0.0f;
@@ -88,29 +87,20 @@ public:
 
   float foodTime = 0.0f;
 
-  // Phase 14: per-biome stats, readable by engine for HUD/debug.
   BiomeStats biomeStats[3];
 
   float foodDensityAt(float x, float z) const {
-    // Biome modulates base food density:
-    // valleys get a bonus, highlands get a penalty.
     float base = stb_perlin_noise3(x * 0.04f, foodTime * 0.08f, z * 0.04f,
                                    0, 0, 0);
     float biome = terrain->biomeAt(x, z); // [-1, 1]
-    // biome < 0 → valley → more food; biome > 0 → highland → less food
     float modulated = base - biome * 0.4f;
     return glm::clamp(modulated, -1.0f, 1.0f);
   }
 
-  // Phase 15: save all brains to a binary file.
-  // Format: [int count] then count * 264-byte Brain records.
   void savePopulation(const std::string &path) const;
 
-  // Phase 15: load brains from file, spawn creatures with them.
-  // Existing population is NOT cleared — call clearCreatures() first if needed.
   void loadPopulation(const std::string &path);
 
-  // Destroy all creature entities (sentients + their tails).
   void clearCreatures();
 
   void addVelocityComponent(int entityID, VelocityComponent vel);
