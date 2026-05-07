@@ -49,6 +49,8 @@ cmake --build build
 |-----|--------|
 | `W A S D` | Move camera |
 | Mouse | Look around |
+| `F5` | Save population |
+| `F9` | Load population |
 | `ESC` | Exit |
 
 ## Project Structure
